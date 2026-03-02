@@ -1,42 +1,86 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.app {
+  min-height: 100vh;
+  background: #0f0f1a;
+  color: #e0e0ff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #333;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.app-header h1 {
+  font-size: 1.2rem;
+  margin: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.card {
-  padding: 2em;
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
-.read-the-docs {
+.status-idle { background: #666; }
+.status-initializing { background: #f0ad4e; animation: pulse 1s infinite; }
+.status-tracking { background: #5cb85c; }
+.status-error { background: #d9534f; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-text {
+  font-size: 0.85rem;
   color: #888;
+  text-transform: capitalize;
+}
+
+.btn-toggle {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-start {
+  background: #4a6cf7;
+  color: #fff;
+}
+
+.btn-start:hover { background: #3a5ce5; }
+
+.btn-stop {
+  background: #d9534f;
+  color: #fff;
+}
+
+.btn-stop:hover { background: #c9302c; }
+
+.btn-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocr-warning {
+  font-size: 0.8rem;
+  color: #f0ad4e;
+  background: rgba(240, 173, 78, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
 }

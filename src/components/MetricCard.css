@@ -1,0 +1,29 @@
+.metric-card {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e0e0ff;
+}
+
+.metric-estimated {
+  display: block;
+  font-size: 0.7rem;
+  color: #f0ad4e;
+  font-weight: 400;
+  margin-top: 2px;
+}
