@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ExpReading, ExpMetrics, Settings } from '../types.ts'
 import { computeMetrics } from '../lib/metrics.ts'
 import { TrackingEngine } from '../lib/tracking-engine.ts'
@@ -40,6 +40,11 @@ export function useTracker(settings: Settings) {
     engineRef.current = engine
     await engine.start(settings.sampleInterval, settings.cropRegion)
   }, [settings.sampleInterval, settings.cropRegion])
+
+  // Sync crop region changes to running engine
+  useEffect(() => {
+    engineRef.current?.updateCropRegion(settings.cropRegion)
+  }, [settings.cropRegion])
 
   const stopTracking = useCallback(() => {
     engineRef.current?.stop()

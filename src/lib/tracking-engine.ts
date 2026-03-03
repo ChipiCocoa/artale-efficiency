@@ -20,13 +20,19 @@ export class TrackingEngine {
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
   private lastRawExp: number | null = null
+  private cropRegion: CropRegion | null = null
   private callbacks: TrackingCallbacks
 
   constructor(callbacks: TrackingCallbacks) {
     this.callbacks = callbacks
   }
 
+  updateCropRegion(cropRegion: CropRegion | null): void {
+    this.cropRegion = cropRegion
+  }
+
   async start(intervalSeconds: number, cropRegion: CropRegion | null): Promise<void> {
+    this.cropRegion = cropRegion
     this.callbacks.onStatusChange('initializing')
 
     try {
@@ -41,11 +47,11 @@ export class TrackingEngine {
       this.callbacks.onStatusChange('tracking')
 
       // Take first reading immediately
-      await this.takeSample(cropRegion)
+      await this.takeSample()
 
       // Then at intervals
       this.intervalId = setInterval(() => {
-        this.takeSample(cropRegion)
+        this.takeSample()
       }, intervalSeconds * 1000)
     } catch (err) {
       this.callbacks.onStatusChange('error')
@@ -53,8 +59,8 @@ export class TrackingEngine {
     }
   }
 
-  private async takeSample(cropRegion: CropRegion | null): Promise<void> {
-    const frame = this.capture.captureFrame(cropRegion)
+  private async takeSample(): Promise<void> {
+    const frame = this.capture.captureFrame(this.cropRegion)
     if (!frame) return
 
     const parsed = await this.ocr.recognizeExp(frame)
