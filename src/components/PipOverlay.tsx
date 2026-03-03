@@ -1,9 +1,10 @@
+import { createPortal } from 'react-dom'
 import type { ExpMetrics } from '../types'
 import './PipOverlay.css'
 
 interface PipOverlayProps {
   metrics: ExpMetrics
-  containerRef: React.RefObject<HTMLDivElement | null>
+  pipWindow: Window | null
 }
 
 function formatNumber(n: number): string {
@@ -19,9 +20,9 @@ function formatDuration(ms: number | null): string {
   return `~${minutes}m`
 }
 
-export function PipOverlay({ metrics, containerRef }: PipOverlayProps) {
+function PipContent({ metrics }: { metrics: ExpMetrics }) {
   return (
-    <div ref={containerRef} className="pip-container">
+    <div className="pip-container">
       <div className="pip-row pip-highlight">
         <span className="pip-label">Current EXP</span>
         <span className="pip-value">{formatNumber(metrics.currentExp)} [{metrics.currentPercentage.toFixed(2)}%]</span>
@@ -59,4 +60,9 @@ export function PipOverlay({ metrics, containerRef }: PipOverlayProps) {
       </div>
     </div>
   )
+}
+
+export function PipOverlay({ metrics, pipWindow }: PipOverlayProps) {
+  if (!pipWindow) return null
+  return createPortal(<PipContent metrics={metrics} />, pipWindow.document.body)
 }

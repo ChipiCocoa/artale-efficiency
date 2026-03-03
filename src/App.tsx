@@ -110,7 +110,7 @@ function App() {
         />
       )}
 
-      <PipOverlay metrics={metrics} containerRef={pip.containerRef} />
+      <PipOverlay metrics={metrics} pipWindow={pip.pipWindow} />
     </div>
   )
 }

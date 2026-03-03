@@ -1,8 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 
 export function usePip() {
   const [pipWindow, setPipWindow] = useState<Window | null>(null)
-  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const isSupported = 'documentPictureInPicture' in window
 
@@ -33,16 +32,7 @@ export function usePip() {
       } catch { /* cross-origin stylesheets */ }
     }
 
-    // Move container into PiP
-    if (containerRef.current) {
-      pip.document.body.appendChild(containerRef.current)
-    }
-
     pip.addEventListener('pagehide', () => {
-      // Move container back to main document
-      if (containerRef.current) {
-        document.body.appendChild(containerRef.current)
-      }
       setPipWindow(null)
     })
 
@@ -57,7 +47,7 @@ export function usePip() {
   return {
     isSupported,
     isOpen: pipWindow !== null,
-    containerRef,
+    pipWindow,
     openPip,
     closePip,
   }
