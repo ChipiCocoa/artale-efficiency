@@ -4,6 +4,10 @@ A browser-based EXP efficiency tracker for Artale in MapleStory Worlds. Captures
 
 **Live:** https://chipicocoa.github.io/artale-efficiency/
 
+![In-game with PiP overlay](docs/screenshots/in-game.png)
+
+![Dashboard](docs/screenshots/ocr.png)
+
 ## Features
 
 - **Screen capture** — shares your game window via browser API
@@ -22,6 +26,8 @@ A browser-based EXP efficiency tracker for Artale in MapleStory Worlds. Captures
 3. Open **Settings** → **Set Region** → scroll to zoom in → drag to select the EXP numbers
 4. Watch the dashboard update in real time
 5. Optionally click **Pop Out** for an always-on-top overlay
+
+![Crop selector](docs/screenshots/crop.png)
 
 ## Requirements
 
