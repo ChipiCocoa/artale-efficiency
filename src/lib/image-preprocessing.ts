@@ -41,20 +41,28 @@ export function invert(imageData: ImageData): ImageData {
   return new ImageData(data, imageData.width, imageData.height)
 }
 
+let _srcCanvas: OffscreenCanvas | null = null
+let _dstCanvas: OffscreenCanvas | null = null
+
 export function upscale(imageData: ImageData, factor: number): ImageData {
   const sw = imageData.width
   const sh = imageData.height
   const dw = Math.round(sw * factor)
   const dh = Math.round(sh * factor)
-  const src = new OffscreenCanvas(sw, sh)
-  const srcCtx = src.getContext('2d')!
+
+  if (!_srcCanvas || _srcCanvas.width !== sw || _srcCanvas.height !== sh) {
+    _srcCanvas = new OffscreenCanvas(sw, sh)
+  }
+  const srcCtx = _srcCanvas.getContext('2d')!
   srcCtx.putImageData(imageData, 0, 0)
-  const dst = new OffscreenCanvas(dw, dh)
-  const dstCtx = dst.getContext('2d')!
-  // Use smooth scaling for better text quality
+
+  if (!_dstCanvas || _dstCanvas.width !== dw || _dstCanvas.height !== dh) {
+    _dstCanvas = new OffscreenCanvas(dw, dh)
+  }
+  const dstCtx = _dstCanvas.getContext('2d')!
   dstCtx.imageSmoothingEnabled = true
   dstCtx.imageSmoothingQuality = 'high'
-  dstCtx.drawImage(src, 0, 0, dw, dh)
+  dstCtx.drawImage(_srcCanvas, 0, 0, dw, dh)
   return dstCtx.getImageData(0, 0, dw, dh)
 }
 

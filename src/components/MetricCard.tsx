@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import './MetricCard.css'
 
 interface MetricCardProps {
@@ -6,7 +7,7 @@ interface MetricCardProps {
   estimated?: boolean
 }
 
-export function MetricCard({ label, value, estimated }: MetricCardProps) {
+export const MetricCard = memo(function MetricCard({ label, value, estimated }: MetricCardProps) {
   return (
     <div className="metric-card">
       <div className="metric-label">{label}</div>
@@ -16,4 +17,4 @@ export function MetricCard({ label, value, estimated }: MetricCardProps) {
       </div>
     </div>
   )
-}
+})

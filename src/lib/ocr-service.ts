@@ -21,6 +21,8 @@ export class OcrService {
   }
 
   lastDebugImages: OcrDebugImages | null = null
+  debugEnabled = false
+  private ocrCanvas: OffscreenCanvas | null = null
 
   async recognizeExp(imageData: ImageData): Promise<ParsedExp | null> {
     if (!this.worker) throw new Error('OCR not initialized. Call initialize() first.')
@@ -31,25 +33,29 @@ export class OcrService {
     const binary = threshold(gray, 200)
     const final_ = invert(binary)
 
-    // Generate debug images
-    const rawCanvas = new OffscreenCanvas(imageData.width, imageData.height)
-    rawCanvas.getContext('2d')!.putImageData(imageData, 0, 0)
-    const rawBlob = await rawCanvas.convertToBlob({ type: 'image/png' })
+    // Generate debug images only when debug panel is visible
+    if (this.debugEnabled) {
+      const rawCanvas = new OffscreenCanvas(imageData.width, imageData.height)
+      rawCanvas.getContext('2d')!.putImageData(imageData, 0, 0)
+      const rawBlob = await rawCanvas.convertToBlob({ type: 'image/png' })
 
-    const procCanvas = new OffscreenCanvas(final_.width, final_.height)
-    procCanvas.getContext('2d')!.putImageData(final_, 0, 0)
-    const procBlob = await procCanvas.convertToBlob({ type: 'image/png' })
+      const procCanvas = new OffscreenCanvas(final_.width, final_.height)
+      procCanvas.getContext('2d')!.putImageData(final_, 0, 0)
+      const procBlob = await procCanvas.convertToBlob({ type: 'image/png' })
 
-    this.lastDebugImages = {
-      raw: URL.createObjectURL(rawBlob),
-      processed: URL.createObjectURL(procBlob),
+      this.lastDebugImages = {
+        raw: URL.createObjectURL(rawBlob),
+        processed: URL.createObjectURL(procBlob),
+      }
     }
 
-    // Convert ImageData to canvas for Tesseract
-    const canvas = new OffscreenCanvas(final_.width, final_.height)
-    const ctx = canvas.getContext('2d')!
+    // Reuse canvas for Tesseract conversion
+    if (!this.ocrCanvas || this.ocrCanvas.width !== final_.width || this.ocrCanvas.height !== final_.height) {
+      this.ocrCanvas = new OffscreenCanvas(final_.width, final_.height)
+    }
+    const ctx = this.ocrCanvas.getContext('2d')!
     ctx.putImageData(final_, 0, 0)
-    const blob = await canvas.convertToBlob({ type: 'image/png' })
+    const blob = await this.ocrCanvas.convertToBlob({ type: 'image/png' })
 
     const { data: { text, confidence } } = await this.worker.recognize(blob)
     const trimmed = text.trim()

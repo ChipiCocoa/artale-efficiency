@@ -100,6 +100,23 @@
   border-radius: 6px;
 }
 
+.btn-debug-toggle {
+  display: block;
+  margin: 12px auto;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  background: none;
+  color: #555;
+  border: 1px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-debug-toggle:hover {
+  color: #888;
+  border-color: #555;
+}
+
 .app-footer {
   text-align: center;
   padding: 24px;

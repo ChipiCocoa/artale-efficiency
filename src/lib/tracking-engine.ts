@@ -16,7 +16,9 @@ export interface TrackingCallbacks {
 export class TrackingEngine {
   private capture = new ScreenCapture()
   private ocr = new OcrService()
-  private intervalId: ReturnType<typeof setInterval> | null = null
+  private timeoutId: ReturnType<typeof setTimeout> | null = null
+  private intervalMs = 1000
+  private running = false
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
   private lastRawExp: number | null = null
@@ -31,8 +33,14 @@ export class TrackingEngine {
     this.cropRegion = cropRegion
   }
 
+  setDebugEnabled(enabled: boolean): void {
+    this.ocr.debugEnabled = enabled
+  }
+
   async start(intervalSeconds: number, cropRegion: CropRegion | null): Promise<void> {
     this.cropRegion = cropRegion
+    this.intervalMs = intervalSeconds * 1000
+    this.running = true
     this.callbacks.onStatusChange('initializing')
 
     try {
@@ -46,17 +54,23 @@ export class TrackingEngine {
 
       this.callbacks.onStatusChange('tracking')
 
-      // Take first reading immediately
-      await this.takeSample()
-
-      // Then at intervals
-      this.intervalId = setInterval(() => {
-        this.takeSample()
-      }, intervalSeconds * 1000)
+      // Take first reading, then chain next after completion
+      this.sampleLoop()
     } catch (err) {
       this.callbacks.onStatusChange('error')
       throw err
     }
+  }
+
+  private async sampleLoop(): Promise<void> {
+    if (!this.running) return
+    const start = Date.now()
+    await this.takeSample()
+    if (!this.running) return
+    // Schedule next sample: interval minus time spent, minimum 0
+    const elapsed = Date.now() - start
+    const delay = Math.max(0, this.intervalMs - elapsed)
+    this.timeoutId = setTimeout(() => this.sampleLoop(), delay)
   }
 
   private async takeSample(): Promise<void> {
@@ -115,9 +129,10 @@ export class TrackingEngine {
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId)
-      this.intervalId = null
+    this.running = false
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId)
+      this.timeoutId = null
     }
     this.capture.stop()
     this.ocr.terminate()

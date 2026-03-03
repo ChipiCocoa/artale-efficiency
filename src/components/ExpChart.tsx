@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import type { ExpReading } from '../types'
 import './ExpChart.css'
@@ -13,31 +13,40 @@ interface ChartPoint {
 }
 
 export function ExpChart({ readings }: ExpChartProps) {
-  const data = useMemo(() => {
-    if (readings.length < 2) return []
+  const [data, setData] = useState<ChartPoint[]>([])
+  const processedCountRef = useRef(0)
+  const lastBucketStartRef = useRef(0)
 
-    const points: ChartPoint[] = []
-    const bucketMs = 60_000
+  useEffect(() => {
+    if (readings.length < 2) return
+
     const first = readings[0]
-    let bucketStart = first.timestamp
+    let newPoints: ChartPoint[] = []
+    let bucketStart = lastBucketStartRef.current || first.timestamp
+    const bucketMs = 60_000
 
-    for (let i = 1; i < readings.length; i++) {
+    // Only process readings we haven't seen yet
+    const startIdx = Math.max(1, processedCountRef.current)
+    for (let i = startIdx; i < readings.length; i++) {
       if (readings[i].timestamp - bucketStart >= bucketMs) {
         const elapsed = readings[i].timestamp - first.timestamp
         const expGained = readings[i].rawExp - first.rawExp
         const expPerHour = elapsed > 0 ? Math.round((expGained / elapsed) * 3_600_000) : 0
 
         const date = new Date(readings[i].timestamp)
-        points.push({
+        newPoints.push({
           time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           expPerHour,
         })
-
         bucketStart = readings[i].timestamp
       }
     }
 
-    return points
+    if (newPoints.length > 0) {
+      setData(prev => [...prev, ...newPoints])
+      lastBucketStartRef.current = bucketStart
+    }
+    processedCountRef.current = readings.length
   }, [readings])
 
   if (data.length < 2) {

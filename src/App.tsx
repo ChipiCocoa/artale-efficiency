@@ -15,7 +15,8 @@ function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [showSettings, setShowSettings] = useState(false)
   const [showCropSelector, setShowCropSelector] = useState(false)
-  const { readings, metrics, status, ocrFailures, debugImages, startTracking, stopTracking, getCapture } = useTracker(settings)
+  const { readings, metrics, status, ocrFailures, debugImages, setDebugEnabled, startTracking, stopTracking, getCapture } = useTracker(settings)
+  const [showDebug, setShowDebug] = useState(false)
   const pip = usePip()
 
   useEffect(() => {
@@ -77,7 +78,17 @@ function App() {
       <main>
         <Dashboard metrics={metrics} />
         <ExpChart readings={readings} />
-        {debugImages && <DebugPreview images={debugImages} />}
+        <button
+          className="btn-debug-toggle"
+          onClick={() => {
+            const next = !showDebug
+            setShowDebug(next)
+            setDebugEnabled(next)
+          }}
+        >
+          {showDebug ? 'Hide' : 'Show'} OCR Debug
+        </button>
+        {showDebug && debugImages && <DebugPreview images={debugImages} />}
       </main>
 
       {showSettings && (
