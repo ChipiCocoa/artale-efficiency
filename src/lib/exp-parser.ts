@@ -3,8 +3,7 @@ export interface ParsedExp {
   percentage: number
 }
 
-// Flexible brackets: OCR often misreads [ ] as ( ) | { } etc.
-const EXP_REGEX = /(\d+)\s*[(\[{|]\s*(\d+\.\d+)\s*%\s*[)\]|}]/
+const EXP_REGEX = /(\d+)\s*\[\s*(\d+\.\d+)\s*%\s*\]/
 
 export function parseExpText(text: string): ParsedExp | null {
   const match = text.match(EXP_REGEX)

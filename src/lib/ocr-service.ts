@@ -16,6 +16,7 @@ export class OcrService {
     this.worker = await createWorker('eng')
     await this.worker.setParameters({
       tessedit_pageseg_mode: PSM.SINGLE_LINE,
+      tessedit_char_whitelist: '0123456789[].% ',
     })
   }
 
@@ -24,10 +25,8 @@ export class OcrService {
   async recognizeExp(imageData: ImageData): Promise<ParsedExp | null> {
     if (!this.worker) throw new Error('OCR not initialized. Call initialize() first.')
 
-    // Preprocess: upscale 3x → grayscale → high threshold → invert
-    // High threshold (200) keeps only bright white text, removes progress bar & background
-    // Invert: Tesseract prefers dark text on white background
-    const scaled = upscale(imageData, 3)
+    // Preprocess: upscale 4x → grayscale → high threshold → invert
+    const scaled = upscale(imageData, 4)
     const gray = toGrayscale(scaled)
     const binary = threshold(gray, 200)
     const final_ = invert(binary)
