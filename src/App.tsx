@@ -111,6 +111,12 @@ function App() {
       )}
 
       <PipOverlay metrics={metrics} pipWindow={pip.pipWindow} />
+
+      <footer className="app-footer">
+        Made by <a href="https://github.com/ChipiCocoa" target="_blank" rel="noopener noreferrer">ChipiCocoa</a>
+        {' · '}
+        <a href="https://github.com/ChipiCocoa/artale-efficiency" target="_blank" rel="noopener noreferrer">Source Code</a>
+      </footer>
     </div>
   )
 }
