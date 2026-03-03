@@ -77,6 +77,21 @@
   cursor: not-allowed;
 }
 
+.btn-settings {
+  padding: 8px 16px;
+  background: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-settings:hover {
+  background: #444;
+}
+
 .ocr-warning {
   font-size: 0.8rem;
   color: #f0ad4e;

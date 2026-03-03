@@ -1,0 +1,18 @@
+.exp-chart {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.exp-chart h3 {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.exp-chart-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px 20px;
+  font-size: 0.9rem;
+}
