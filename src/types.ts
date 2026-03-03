@@ -23,7 +23,7 @@ export interface CropRegion {
   height: number
 }
 
-export type SampleInterval = 0.5 | 1 | 2 | 3 | 5 | 10 | 30 | 60
+export type SampleInterval = 0.5 | 1 | 2 | 3 | 5
 
 export interface Settings {
   sampleInterval: SampleInterval

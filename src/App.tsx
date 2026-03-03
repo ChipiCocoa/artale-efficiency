@@ -22,10 +22,22 @@ function App() {
     saveSettings(settings)
   }, [settings])
 
+  // Auto-open crop selector after tracking starts if no crop region set
+  const [needsCrop, setNeedsCrop] = useState(false)
+  useEffect(() => {
+    if (needsCrop && status === 'tracking' && getCapture()) {
+      setShowCropSelector(true)
+      setNeedsCrop(false)
+    }
+  }, [needsCrop, status, getCapture])
+
   const handleToggle = () => {
     if (status === 'tracking') {
       stopTracking()
     } else {
+      if (!settings.cropRegion) {
+        setNeedsCrop(true)
+      }
       startTracking()
     }
   }
@@ -88,7 +100,13 @@ function App() {
             setSettings(prev => ({ ...prev, cropRegion: region }))
             setShowCropSelector(false)
           }}
-          onClose={() => setShowCropSelector(false)}
+          onClose={() => {
+            // If no crop region, stop tracking — crop is mandatory
+            if (!settings.cropRegion) {
+              stopTracking()
+            }
+            setShowCropSelector(false)
+          }}
         />
       )}
 

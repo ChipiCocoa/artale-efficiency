@@ -8,7 +8,7 @@ interface SettingsPanelProps {
   onClose: () => void
 }
 
-const INTERVAL_OPTIONS: SampleInterval[] = [0.5, 1, 2, 3, 5, 10, 30, 60]
+const INTERVAL_OPTIONS: SampleInterval[] = [0.5, 1, 2, 3, 5]
 
 export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onClose }: SettingsPanelProps) {
   return (
