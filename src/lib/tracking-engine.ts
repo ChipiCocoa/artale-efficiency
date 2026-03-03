@@ -1,6 +1,7 @@
 import type { ExpReading, CropRegion } from '../types.ts'
 import { ScreenCapture } from './screen-capture.ts'
 import { OcrService } from './ocr-service.ts'
+import type { OcrDebugImages } from './ocr-service.ts'
 
 export type TrackingStatus = 'idle' | 'initializing' | 'tracking' | 'error'
 
@@ -8,6 +9,7 @@ export interface TrackingCallbacks {
   onReading: (reading: ExpReading) => void
   onStatusChange: (status: TrackingStatus) => void
   onOcrFailure: (consecutiveFailures: number) => void
+  onDebugImages: (images: OcrDebugImages) => void
   onLevelUp: () => void
 }
 
@@ -17,6 +19,7 @@ export class TrackingEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
+  private lastRawExp: number | null = null
   private callbacks: TrackingCallbacks
 
   constructor(callbacks: TrackingCallbacks) {
@@ -56,18 +59,37 @@ export class TrackingEngine {
 
     const parsed = await this.ocr.recognizeExp(frame)
 
+    if (this.ocr.lastDebugImages) {
+      this.callbacks.onDebugImages(this.ocr.lastDebugImages)
+    }
+
     if (!parsed) {
       this.consecutiveFailures++
       this.callbacks.onOcrFailure(this.consecutiveFailures)
       return
     }
 
-    this.consecutiveFailures = 0
-
-    // Level-up detection
-    if (this.lastPercentage !== null && parsed.percentage < this.lastPercentage - 50) {
+    // Level-up detection (check before outlier filter)
+    const isLevelUp = this.lastPercentage !== null && parsed.percentage < this.lastPercentage - 50
+    if (isLevelUp) {
       this.callbacks.onLevelUp()
     }
+
+    // Outlier filter: if EXP jumps by more than 2x vs previous reading,
+    // it's almost certainly an OCR misread (e.g. extra digit). Skip it.
+    // Exception: allow through if level-up detected (EXP may reset per-level).
+    if (this.lastRawExp !== null && parsed.rawExp > 0 && !isLevelUp) {
+      const ratio = parsed.rawExp / this.lastRawExp
+      if (ratio > 2 || ratio < 0.5) {
+        console.log(`[OCR] outlier filtered: ${parsed.rawExp} vs prev ${this.lastRawExp} (ratio ${ratio.toFixed(2)})`)
+        this.consecutiveFailures++
+        this.callbacks.onOcrFailure(this.consecutiveFailures)
+        return
+      }
+    }
+
+    this.consecutiveFailures = 0
+    this.lastRawExp = parsed.rawExp
     this.lastPercentage = parsed.percentage
 
     const reading: ExpReading = {
@@ -95,5 +117,6 @@ export class TrackingEngine {
     this.ocr.terminate()
     this.consecutiveFailures = 0
     this.lastPercentage = null
+    this.lastRawExp = null
   }
 }

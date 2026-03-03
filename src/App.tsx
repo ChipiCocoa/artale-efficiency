@@ -6,6 +6,7 @@ import { ExpChart } from './components/ExpChart'
 import { SettingsPanel } from './components/SettingsPanel'
 import { CropSelector } from './components/CropSelector'
 import { PipOverlay } from './components/PipOverlay'
+import { DebugPreview } from './components/DebugPreview'
 import { loadSettings, saveSettings } from './lib/settings'
 import type { Settings } from './types'
 import './App.css'
@@ -14,7 +15,7 @@ function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [showSettings, setShowSettings] = useState(false)
   const [showCropSelector, setShowCropSelector] = useState(false)
-  const { readings, metrics, status, ocrFailures, startTracking, stopTracking, getCapture } = useTracker(settings)
+  const { readings, metrics, status, ocrFailures, debugImages, startTracking, stopTracking, getCapture } = useTracker(settings)
   const pip = usePip()
 
   useEffect(() => {
@@ -64,6 +65,7 @@ function App() {
       <main>
         <Dashboard metrics={metrics} />
         <ExpChart readings={readings} />
+        {debugImages && <DebugPreview images={debugImages} />}
       </main>
 
       {showSettings && (

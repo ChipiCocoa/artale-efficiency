@@ -3,7 +3,7 @@ import type { Settings } from '../types'
 const STORAGE_KEY = 'artale-settings'
 
 export const DEFAULT_SETTINGS: Settings = {
-  sampleInterval: 10,
+  sampleInterval: 1,
   cropRegion: null,
 }
 

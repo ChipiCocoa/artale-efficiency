@@ -8,7 +8,7 @@ interface SettingsPanelProps {
   onClose: () => void
 }
 
-const INTERVAL_OPTIONS: SampleInterval[] = [5, 10, 30, 60]
+const INTERVAL_OPTIONS: SampleInterval[] = [0.5, 1, 2, 3, 5, 10, 30, 60]
 
 export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onClose }: SettingsPanelProps) {
   return (
@@ -25,7 +25,7 @@ export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onC
                 className={`interval-btn ${settings.sampleInterval === seconds ? 'active' : ''}`}
                 onClick={() => onSettingsChange({ ...settings, sampleInterval: seconds })}
               >
-                {seconds}s
+                {seconds >= 1 ? `${seconds}s` : `${seconds * 1000}ms`}
               </button>
             ))}
           </div>

@@ -20,6 +20,44 @@ export function enhanceContrast(imageData: ImageData, factor: number): ImageData
   return new ImageData(data, imageData.width, imageData.height)
 }
 
+export function threshold(imageData: ImageData, cutoff: number = 128): ImageData {
+  const data = new Uint8ClampedArray(imageData.data)
+  for (let i = 0; i < data.length; i += 4) {
+    const val = data[i] >= cutoff ? 255 : 0
+    data[i] = val
+    data[i + 1] = val
+    data[i + 2] = val
+  }
+  return new ImageData(data, imageData.width, imageData.height)
+}
+
+export function invert(imageData: ImageData): ImageData {
+  const data = new Uint8ClampedArray(imageData.data)
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 255 - data[i]
+    data[i + 1] = 255 - data[i + 1]
+    data[i + 2] = 255 - data[i + 2]
+  }
+  return new ImageData(data, imageData.width, imageData.height)
+}
+
+export function upscale(imageData: ImageData, factor: number): ImageData {
+  const sw = imageData.width
+  const sh = imageData.height
+  const dw = Math.round(sw * factor)
+  const dh = Math.round(sh * factor)
+  const src = new OffscreenCanvas(sw, sh)
+  const srcCtx = src.getContext('2d')!
+  srcCtx.putImageData(imageData, 0, 0)
+  const dst = new OffscreenCanvas(dw, dh)
+  const dstCtx = dst.getContext('2d')!
+  // Use smooth scaling for better text quality
+  dstCtx.imageSmoothingEnabled = true
+  dstCtx.imageSmoothingQuality = 'high'
+  dstCtx.drawImage(src, 0, 0, dw, dh)
+  return dstCtx.getImageData(0, 0, dw, dh)
+}
+
 function clamp(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)))
 }

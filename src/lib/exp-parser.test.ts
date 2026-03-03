@@ -27,4 +27,15 @@ describe('parseExpText', () => {
     expect(parseExpText(' 3109353[30.87%] ')).toEqual({ rawExp: 3109353, percentage: 30.87 })
     expect(parseExpText('EXP: 3109353[30.87%] Next')).toEqual({ rawExp: 3109353, percentage: 30.87 })
   })
+
+  it('handles space before closing bracket "84837120[60.76% ]"', () => {
+    expect(parseExpText('EXP. 84837120[60.76% ]')).toEqual({ rawExp: 84837120, percentage: 60.76 })
+    expect(parseExpText('84837120[60.76%  ]')).toEqual({ rawExp: 84837120, percentage: 60.76 })
+  })
+
+  it('handles OCR bracket misreads: ( ) | { }', () => {
+    expect(parseExpText('86936078(62.27% |')).toEqual({ rawExp: 86936078, percentage: 62.27 })
+    expect(parseExpText('86936078{62.27%}')).toEqual({ rawExp: 86936078, percentage: 62.27 })
+    expect(parseExpText('86936078|62.27%)')).toEqual({ rawExp: 86936078, percentage: 62.27 })
+  })
 })

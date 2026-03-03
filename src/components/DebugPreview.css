@@ -1,0 +1,37 @@
+.debug-preview {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.debug-preview h3 {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.debug-images {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.debug-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.debug-label {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.debug-item img {
+  border: 1px solid #444;
+  border-radius: 4px;
+  max-width: 100%;
+  image-rendering: pixelated;
+}

@@ -1,15 +1,20 @@
 .pip-container {
   background: #0f0f1a;
   color: #e0e0ff;
-  padding: 12px 16px;
+  padding: 14px 18px;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .pip-row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
+  align-items: baseline;
+  padding: 5px 0;
+}
+
+.pip-highlight {
+  padding: 8px 0;
 }
 
 .pip-label {
@@ -19,5 +24,17 @@
 
 .pip-value {
   font-weight: 700;
-  font-size: 1.1em;
+  font-size: 1.05em;
+  text-align: right;
+}
+
+.pip-est {
+  font-weight: 400;
+  font-size: 0.75em;
+  color: #f0ad4e;
+}
+
+.pip-divider {
+  border-top: 1px solid #333;
+  margin: 4px 0;
 }
