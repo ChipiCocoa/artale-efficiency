@@ -1,0 +1,23 @@
+.pip-container {
+  background: #0f0f1a;
+  color: #e0e0ff;
+  padding: 12px 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+}
+
+.pip-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.pip-label {
+  color: #888;
+  font-size: 0.85em;
+}
+
+.pip-value {
+  font-weight: 700;
+  font-size: 1.1em;
+}
