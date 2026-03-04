@@ -1,6 +1,7 @@
 export interface ExpReading {
   timestamp: number    // Date.now()
-  rawExp: number       // e.g. 3109353
+  cumulativeExp: number       // cumulative EXP (adjusted with offset across level-ups)
+  displayExp: number   // per-level EXP as shown in game (e.g. 3109353)
   percentage: number   // e.g. 30.87
 }
 

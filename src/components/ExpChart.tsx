@@ -40,7 +40,7 @@ export function ExpChart({ readings }: ExpChartProps) {
     for (let i = lo; i < readings.length; i++) {
       if (readings[i].timestamp - bucketStart >= bucketMs) {
         const elapsed = readings[i].timestamp - first.timestamp
-        const expGained = readings[i].rawExp - first.rawExp
+        const expGained = readings[i].cumulativeExp - first.cumulativeExp
         const expPerHour = elapsed > 0 ? Math.round((expGained / elapsed) * 3_600_000) : 0
 
         newPoints.push({

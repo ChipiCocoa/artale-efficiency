@@ -36,7 +36,7 @@ export function computeMetrics(
   const first = readings[0]
   const latest = readings[readings.length - 1]
   const elapsedMs = latest.timestamp - (sessionStartTime ?? first.timestamp)
-  const sessionExpGained = latest.rawExp - (sessionStartExp ?? first.rawExp)
+  const sessionExpGained = latest.cumulativeExp - (sessionStartExp ?? first.cumulativeExp)
 
   // Estimated vs actual
   const isExpPer10MinEstimated = elapsedMs < TEN_MINUTES_MS
@@ -48,7 +48,7 @@ export function computeMetrics(
     if (!isExpPer10MinEstimated) {
       // Actual: EXP gained in the last 10 minutes
       const windowStart = findReadingAt(readings, latest.timestamp - TEN_MINUTES_MS)
-      expPer10Min = latest.rawExp - windowStart.rawExp
+      expPer10Min = latest.cumulativeExp - windowStart.cumulativeExp
     } else {
       // Estimated: extrapolate from available data
       expPer10Min = (sessionExpGained / elapsedMs) * TEN_MINUTES_MS
@@ -61,7 +61,7 @@ export function computeMetrics(
     if (!isExpPerHourEstimated) {
       // Actual: EXP gained in the last 60 minutes
       const windowStart = findReadingAt(readings, latest.timestamp - ONE_HOUR_MS)
-      expPerHour = latest.rawExp - windowStart.rawExp
+      expPerHour = latest.cumulativeExp - windowStart.cumulativeExp
     } else {
       // Estimated: extrapolate from available data
       expPerHour = (sessionExpGained / elapsedMs) * ONE_HOUR_MS
@@ -84,14 +84,14 @@ export function computeMetrics(
       timeToLevelMs = percentRemaining * msPerPercent
     } else if (latest.percentage > 0) {
       // Fallback: estimate using raw EXP and current percentage
-      const estimatedTotalLevelExp = latest.rawExp / (latest.percentage / 100)
-      const expRemaining = estimatedTotalLevelExp - latest.rawExp
+      const estimatedTotalLevelExp = latest.displayExp / (latest.percentage / 100)
+      const expRemaining = estimatedTotalLevelExp - latest.displayExp
       timeToLevelMs = expRemaining / ratePerMs
     }
   }
 
   return {
-    currentExp: latest.rawExp,
+    currentExp: latest.displayExp,
     currentPercentage: latest.percentage,
     expPer10Min: Math.round(expPer10Min),
     expPerHour: Math.round(expPerHour),
