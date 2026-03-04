@@ -28,34 +28,44 @@ describe('computeMetrics', () => {
     expect(m.sessionExpGained).toBe(0)
   })
 
-  it('computes EXP/hour from two readings 5 minutes apart (estimated)', () => {
+  it('computes estimated EXP/hour from two readings 5 minutes apart', () => {
     const readings = makeReadings([
       { minutesAgo: 5, rawExp: 1000, percentage: 10 },
       { minutesAgo: 0, rawExp: 2000, percentage: 20 },
     ])
     const m = computeMetrics(readings)
-    // 1000 exp in 5 min = 12000/hr
+    // Estimated: 1000 exp in 5 min extrapolated = 12000/hr, 2000/10min
     expect(m.expPerHour).toBe(12000)
+    expect(m.expPer10Min).toBe(2000)
     expect(m.isExpPerHourEstimated).toBe(true)
     expect(m.isExpPer10MinEstimated).toBe(true)
   })
 
-  it('marks EXP/10min as actual after 10+ minutes', () => {
+  it('uses sliding window for EXP/10min after 10+ minutes', () => {
+    // Rate changes: slow first 10 min, fast last 2 min
     const readings = makeReadings([
       { minutesAgo: 12, rawExp: 1000, percentage: 10 },
+      { minutesAgo: 10, rawExp: 1200, percentage: 12 }, // 10 min ago
+      { minutesAgo: 2, rawExp: 1800, percentage: 18 },
       { minutesAgo: 0, rawExp: 3400, percentage: 34 },
     ])
     const m = computeMetrics(readings)
+    // EXP/10min should be actual last 10 min: 3400 - 1200 = 2200
+    expect(m.expPer10Min).toBe(2200)
     expect(m.isExpPer10MinEstimated).toBe(false)
     expect(m.isExpPerHourEstimated).toBe(true)
   })
 
-  it('marks EXP/hour as actual after 60+ minutes', () => {
+  it('uses sliding window for EXP/hour after 60+ minutes', () => {
     const readings = makeReadings([
       { minutesAgo: 65, rawExp: 1000, percentage: 10 },
+      { minutesAgo: 60, rawExp: 2000, percentage: 15 }, // 60 min ago
+      { minutesAgo: 30, rawExp: 8000, percentage: 30 },
       { minutesAgo: 0, rawExp: 14000, percentage: 50 },
     ])
     const m = computeMetrics(readings)
+    // EXP/hour should be actual last 60 min: 14000 - 2000 = 12000
+    expect(m.expPerHour).toBe(12000)
     expect(m.isExpPer10MinEstimated).toBe(false)
     expect(m.isExpPerHourEstimated).toBe(false)
   })
@@ -66,10 +76,7 @@ describe('computeMetrics', () => {
       { minutesAgo: 0, rawExp: 2000, percentage: 20 },
     ])
     const m = computeMetrics(readings)
-    // rate: 1000 per 10 min. At 20%, need 80% more.
-    // If 10% = 1000 exp, then 100% = 10000 exp total for level.
-    // Need 80% = 8000 exp. Rate = 6000/hr.
-    // Time = 8000 / 6000 * 3600000 ms = 4800000 ms = 80 min
+    // 10% gained in 10 min, 80% remaining → 80 min
     expect(m.timeToLevelMs).toBeCloseTo(80 * 60_000, -3)
   })
 
@@ -91,7 +98,7 @@ describe('computeMetrics', () => {
       { minutesAgo: 0, rawExp: 5500, percentage: 55 },
     ])
     const m = computeMetrics(readings)
-    // Net gain: 500 in 10 min = 3000/hr
+    // Estimated: net 500 in 10 min → 3000/hr
     expect(m.expPerHour).toBeCloseTo(3000, -1)
     expect(m.sessionExpGained).toBe(500)
   })

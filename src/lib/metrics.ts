@@ -3,6 +3,17 @@ import type { ExpReading, ExpMetrics } from '../types'
 const TEN_MINUTES_MS = 10 * 60_000
 const ONE_HOUR_MS = 60 * 60_000
 
+// Find the reading closest to (but not after) a target timestamp using binary search
+function findReadingAt(readings: ExpReading[], targetTimestamp: number): ExpReading {
+  let lo = 0, hi = readings.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if (readings[mid].timestamp <= targetTimestamp) lo = mid
+    else hi = mid - 1
+  }
+  return readings[lo]
+}
+
 export function computeMetrics(readings: ExpReading[]): ExpMetrics {
   if (readings.length === 0) {
     return {
@@ -23,35 +34,55 @@ export function computeMetrics(readings: ExpReading[]): ExpMetrics {
   const elapsedMs = latest.timestamp - first.timestamp
   const sessionExpGained = latest.rawExp - first.rawExp
 
-  // Rate calculation
-  let expPerHour = 0
-  let expPer10Min = 0
-
-  if (elapsedMs > 0) {
-    const expPerMs = sessionExpGained / elapsedMs
-    expPerHour = expPerMs * ONE_HOUR_MS
-    expPer10Min = expPerMs * TEN_MINUTES_MS
-  }
-
   // Estimated vs actual
   const isExpPer10MinEstimated = elapsedMs < TEN_MINUTES_MS
   const isExpPerHourEstimated = elapsedMs < ONE_HOUR_MS
 
-  // Time to level: estimate based on percentage remaining
+  // EXP/10min: use sliding window if enough data, otherwise extrapolate from all data
+  let expPer10Min = 0
+  if (elapsedMs > 0) {
+    if (!isExpPer10MinEstimated) {
+      // Actual: EXP gained in the last 10 minutes
+      const windowStart = findReadingAt(readings, latest.timestamp - TEN_MINUTES_MS)
+      expPer10Min = latest.rawExp - windowStart.rawExp
+    } else {
+      // Estimated: extrapolate from available data
+      expPer10Min = (sessionExpGained / elapsedMs) * TEN_MINUTES_MS
+    }
+  }
+
+  // EXP/hour: use sliding window if enough data, otherwise extrapolate
+  let expPerHour = 0
+  if (elapsedMs > 0) {
+    if (!isExpPerHourEstimated) {
+      // Actual: EXP gained in the last 60 minutes
+      const windowStart = findReadingAt(readings, latest.timestamp - ONE_HOUR_MS)
+      expPerHour = latest.rawExp - windowStart.rawExp
+    } else {
+      // Estimated: extrapolate from available data
+      expPerHour = (sessionExpGained / elapsedMs) * ONE_HOUR_MS
+    }
+  }
+
+  // Time to level: use the most accurate rate available
   let timeToLevelMs: number | null = null
-  if (expPerHour > 0 && latest.percentage < 100) {
+  const ratePerMs = expPerHour / ONE_HOUR_MS
+  if (ratePerMs > 0 && latest.percentage < 100) {
     const percentRemaining = 100 - latest.percentage
-    const percentGained = latest.percentage - first.percentage
+
+    // Use percentage-based calculation from the rate window
+    const rateWindowMs = isExpPerHourEstimated ? elapsedMs : ONE_HOUR_MS
+    const rateWindowStart = findReadingAt(readings, latest.timestamp - rateWindowMs)
+    const percentGained = latest.percentage - rateWindowStart.percentage
 
     if (percentGained > 0) {
-      const msPerPercent = elapsedMs / percentGained
+      const msPerPercent = rateWindowMs / percentGained
       timeToLevelMs = percentRemaining * msPerPercent
-    } else if (sessionExpGained > 0 && latest.percentage > 0) {
+    } else if (latest.percentage > 0) {
       // Fallback: estimate using raw EXP and current percentage
       const estimatedTotalLevelExp = latest.rawExp / (latest.percentage / 100)
       const expRemaining = estimatedTotalLevelExp - latest.rawExp
-      const expPerMs = sessionExpGained / elapsedMs
-      timeToLevelMs = expRemaining / expPerMs
+      timeToLevelMs = expRemaining / ratePerMs
     }
   }
 
