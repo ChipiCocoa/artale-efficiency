@@ -20,36 +20,31 @@ export function ExpChart({ readings }: ExpChartProps) {
   useEffect(() => {
     if (readings.length < 2) return
 
-    const first = firstReadingRef.current ?? readings[0]
     if (!firstReadingRef.current) {
       firstReadingRef.current = readings[0]
     }
+    const first = firstReadingRef.current
 
     const bucketMs = 60_000
-    const lastBucket = lastBucketTimestampRef.current || first.timestamp
-    const newPoints: ChartPoint[] = []
+    let bucketStart = lastBucketTimestampRef.current || first.timestamp
 
-    // Find readings after the last bucket we processed
-    for (let i = readings.length - 1; i >= 1; i--) {
-      if (readings[i].timestamp <= lastBucket) break
-      if (readings[i].timestamp - lastBucket >= bucketMs ||
-          (newPoints.length === 0 && readings[i].timestamp - lastBucket >= bucketMs)) {
-        // Walk forward from where we left off
-      }
+    // Binary search for first reading after bucketStart
+    let lo = 0, hi = readings.length - 1
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (readings[mid].timestamp <= bucketStart) lo = mid + 1
+      else hi = mid
     }
 
-    // Simpler: scan forward from readings that are after lastBucket
-    let bucketStart = lastBucket
-    for (let i = 0; i < readings.length; i++) {
-      if (readings[i].timestamp <= bucketStart) continue
+    const newPoints: ChartPoint[] = []
+    for (let i = lo; i < readings.length; i++) {
       if (readings[i].timestamp - bucketStart >= bucketMs) {
         const elapsed = readings[i].timestamp - first.timestamp
         const expGained = readings[i].rawExp - first.rawExp
         const expPerHour = elapsed > 0 ? Math.round((expGained / elapsed) * 3_600_000) : 0
 
-        const date = new Date(readings[i].timestamp)
         newPoints.push({
-          time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          time: new Date(readings[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           expPerHour,
         })
         bucketStart = readings[i].timestamp
