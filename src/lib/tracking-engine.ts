@@ -93,10 +93,11 @@ export class TrackingEngine {
     // Level-up detection (check before outlier filter)
     const isLevelUp = this.lastPercentage !== null && parsed.percentage < this.lastPercentage - 50
     if (isLevelUp) {
-      // EXP resets per-level, add previous rawExp to offset so readings stay cumulative
+      // EXP resets per-level. lastRawExp is already adjusted (cumulative),
+      // so set offset to it directly — not +=, which would double-count.
       if (this.lastRawExp !== null) {
-        this.expOffset += this.lastRawExp
-        console.log(`[Level Up] offset now ${this.expOffset} (added ${this.lastRawExp})`)
+        this.expOffset = this.lastRawExp
+        console.log(`[Level Up] offset set to ${this.expOffset}`)
       }
       this.callbacks.onLevelUp()
     }
@@ -107,10 +108,9 @@ export class TrackingEngine {
     // it's almost certainly an OCR misread (e.g. extra digit). Skip it.
     // Exception: allow through if level-up detected.
     if (this.lastRawExp !== null && adjustedExp > 0 && !isLevelUp) {
-      const prevAdjusted = this.lastRawExp + (isLevelUp ? 0 : 0) // lastRawExp is already adjusted
-      const ratio = adjustedExp / prevAdjusted
+      const ratio = adjustedExp / this.lastRawExp
       if (ratio > 2 || ratio < 0.5) {
-        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${prevAdjusted} (ratio ${ratio.toFixed(2)})`)
+        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastRawExp} (ratio ${ratio.toFixed(2)})`)
         this.consecutiveFailures++
         this.callbacks.onOcrFailure(this.consecutiveFailures)
         return
