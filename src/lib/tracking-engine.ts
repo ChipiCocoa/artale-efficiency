@@ -21,7 +21,7 @@ export class TrackingEngine {
   private running = false
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
-  private lastRawExp: number | null = null
+  private lastCumulativeExp: number | null = null
   private expOffset = 0 // cumulative offset added on each level-up
   private cropRegion: CropRegion | null = null
   private callbacks: TrackingCallbacks
@@ -90,13 +90,17 @@ export class TrackingEngine {
       return
     }
 
-    // Level-up detection (check before outlier filter)
-    const isLevelUp = this.lastPercentage !== null && parsed.percentage < this.lastPercentage - 50
+    // Level-up detection: require BOTH percentage and EXP to drop significantly
+    // to avoid false triggers from OCR misreads
+    const lastExpBeforeOffset = this.lastCumulativeExp !== null ? this.lastCumulativeExp - this.expOffset : null
+    const isLevelUp = this.lastPercentage !== null
+      && parsed.percentage < this.lastPercentage - 50
+      && lastExpBeforeOffset !== null && parsed.rawExp < lastExpBeforeOffset * 0.5
     if (isLevelUp) {
-      // EXP resets per-level. lastRawExp is already adjusted (cumulative),
-      // so set offset to it directly — not +=, which would double-count.
-      if (this.lastRawExp !== null) {
-        this.expOffset = this.lastRawExp
+      // EXP resets per-level. Set offset to last cumulative value directly
+      // — not +=, which would double-count.
+      if (this.lastCumulativeExp !== null) {
+        this.expOffset = this.lastCumulativeExp
         console.log(`[Level Up] offset set to ${this.expOffset}`)
       }
       this.callbacks.onLevelUp()
@@ -107,10 +111,10 @@ export class TrackingEngine {
     // Outlier filter: if EXP jumps by more than 2x vs previous adjusted reading,
     // it's almost certainly an OCR misread (e.g. extra digit). Skip it.
     // Exception: allow through if level-up detected.
-    if (this.lastRawExp !== null && adjustedExp > 0 && !isLevelUp) {
-      const ratio = adjustedExp / this.lastRawExp
+    if (this.lastCumulativeExp !== null && adjustedExp > 0 && !isLevelUp) {
+      const ratio = adjustedExp / this.lastCumulativeExp
       if (ratio > 2 || ratio < 0.5) {
-        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastRawExp} (ratio ${ratio.toFixed(2)})`)
+        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastCumulativeExp} (ratio ${ratio.toFixed(2)})`)
         this.consecutiveFailures++
         this.callbacks.onOcrFailure(this.consecutiveFailures)
         return
@@ -118,12 +122,13 @@ export class TrackingEngine {
     }
 
     this.consecutiveFailures = 0
-    this.lastRawExp = adjustedExp
+    this.lastCumulativeExp = adjustedExp
     this.lastPercentage = parsed.percentage
 
     const reading: ExpReading = {
       timestamp: Date.now(),
-      rawExp: adjustedExp,
+      cumulativeExp: adjustedExp,
+      displayExp: parsed.rawExp,
       percentage: parsed.percentage,
     }
     this.callbacks.onReading(reading)
@@ -147,7 +152,7 @@ export class TrackingEngine {
     this.ocr.terminate()
     this.consecutiveFailures = 0
     this.lastPercentage = null
-    this.lastRawExp = null
+    this.lastCumulativeExp = null
     this.expOffset = 0
   }
 }

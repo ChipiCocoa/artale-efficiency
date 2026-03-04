@@ -27,7 +27,7 @@ export function useTracker(settings: Settings) {
       onReading: (reading) => {
         if (readingsRef.current.length === 0) {
           sessionStartTimeRef.current = reading.timestamp
-          sessionStartExpRef.current = reading.rawExp
+          sessionStartExpRef.current = reading.cumulativeExp
         }
         readingsRef.current = readingsRef.current.length >= MAX_READINGS
           ? [...readingsRef.current.slice(-MAX_READINGS + 1), reading]
