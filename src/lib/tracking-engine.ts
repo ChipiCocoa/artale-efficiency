@@ -22,6 +22,7 @@ export class TrackingEngine {
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
   private lastRawExp: number | null = null
+  private expOffset = 0 // cumulative offset added on each level-up
   private cropRegion: CropRegion | null = null
   private callbacks: TrackingCallbacks
 
@@ -92,16 +93,24 @@ export class TrackingEngine {
     // Level-up detection (check before outlier filter)
     const isLevelUp = this.lastPercentage !== null && parsed.percentage < this.lastPercentage - 50
     if (isLevelUp) {
+      // EXP resets per-level, add previous rawExp to offset so readings stay cumulative
+      if (this.lastRawExp !== null) {
+        this.expOffset += this.lastRawExp
+        console.log(`[Level Up] offset now ${this.expOffset} (added ${this.lastRawExp})`)
+      }
       this.callbacks.onLevelUp()
     }
 
-    // Outlier filter: if EXP jumps by more than 2x vs previous reading,
+    const adjustedExp = parsed.rawExp + this.expOffset
+
+    // Outlier filter: if EXP jumps by more than 2x vs previous adjusted reading,
     // it's almost certainly an OCR misread (e.g. extra digit). Skip it.
-    // Exception: allow through if level-up detected (EXP may reset per-level).
-    if (this.lastRawExp !== null && parsed.rawExp > 0 && !isLevelUp) {
-      const ratio = parsed.rawExp / this.lastRawExp
+    // Exception: allow through if level-up detected.
+    if (this.lastRawExp !== null && adjustedExp > 0 && !isLevelUp) {
+      const prevAdjusted = this.lastRawExp + (isLevelUp ? 0 : 0) // lastRawExp is already adjusted
+      const ratio = adjustedExp / prevAdjusted
       if (ratio > 2 || ratio < 0.5) {
-        console.log(`[OCR] outlier filtered: ${parsed.rawExp} vs prev ${this.lastRawExp} (ratio ${ratio.toFixed(2)})`)
+        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${prevAdjusted} (ratio ${ratio.toFixed(2)})`)
         this.consecutiveFailures++
         this.callbacks.onOcrFailure(this.consecutiveFailures)
         return
@@ -109,12 +118,12 @@ export class TrackingEngine {
     }
 
     this.consecutiveFailures = 0
-    this.lastRawExp = parsed.rawExp
+    this.lastRawExp = adjustedExp
     this.lastPercentage = parsed.percentage
 
     const reading: ExpReading = {
       timestamp: Date.now(),
-      rawExp: parsed.rawExp,
+      rawExp: adjustedExp,
       percentage: parsed.percentage,
     }
     this.callbacks.onReading(reading)
@@ -139,5 +148,6 @@ export class TrackingEngine {
     this.consecutiveFailures = 0
     this.lastPercentage = null
     this.lastRawExp = null
+    this.expOffset = 0
   }
 }
