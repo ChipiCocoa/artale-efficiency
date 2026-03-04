@@ -19,10 +19,16 @@ export function useTracker(settings: Settings) {
   const engineRef = useRef<TrackingEngine | null>(null)
   const readingsRef = useRef<ExpReading[]>([])
   const metricsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const sessionStartTimeRef = useRef<number>(0)
+  const sessionStartExpRef = useRef<number>(0)
 
   const startTracking = useCallback(async () => {
     const engine = new TrackingEngine({
       onReading: (reading) => {
+        if (readingsRef.current.length === 0) {
+          sessionStartTimeRef.current = reading.timestamp
+          sessionStartExpRef.current = reading.rawExp
+        }
         readingsRef.current = readingsRef.current.length >= MAX_READINGS
           ? [...readingsRef.current.slice(-MAX_READINGS + 1), reading]
           : [...readingsRef.current, reading]
@@ -46,7 +52,7 @@ export function useTracker(settings: Settings) {
     // Metrics update on a separate timer (not every reading)
     metricsIntervalRef.current = setInterval(() => {
       if (readingsRef.current.length > 0) {
-        setMetrics(computeMetrics(readingsRef.current))
+        setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current))
       }
     }, METRICS_UPDATE_INTERVAL)
 
@@ -73,10 +79,13 @@ export function useTracker(settings: Settings) {
     }
     // Final metrics update
     if (readingsRef.current.length > 0) {
-      setMetrics(computeMetrics(readingsRef.current))
+      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current))
     }
     engineRef.current?.stop()
     engineRef.current = null
+    readingsRef.current = []
+    sessionStartTimeRef.current = 0
+    sessionStartExpRef.current = 0
     setStatus('idle')
   }, [])
 

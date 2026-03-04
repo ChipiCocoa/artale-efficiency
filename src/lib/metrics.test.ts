@@ -91,6 +91,23 @@ describe('computeMetrics', () => {
     expect(m.sessionExpGained).toBe(4000)
   })
 
+  it('uses sessionStartTime/sessionStartExp when readings buffer overflows', () => {
+    const now = Date.now()
+    // Simulate: session started 90 min ago, but readings buffer only has last 30 min
+    const sessionStartTime = now - 90 * 60_000
+    const sessionStartExp = 1000
+    const readings = makeReadings([
+      { minutesAgo: 30, rawExp: 7000, percentage: 40 },
+      { minutesAgo: 15, rawExp: 9000, percentage: 50 },
+      { minutesAgo: 0, rawExp: 11000, percentage: 60 },
+    ])
+    const m = computeMetrics(readings, sessionStartTime, sessionStartExp)
+    // Session duration should be 90 min, not 30 min
+    expect(m.sessionDurationMs).toBeCloseTo(90 * 60_000, -3)
+    // Session EXP gained should be 11000 - 1000 = 10000, not 11000 - 7000 = 4000
+    expect(m.sessionExpGained).toBe(10000)
+  })
+
   it('handles EXP decrease (death penalty) gracefully', () => {
     const readings = makeReadings([
       { minutesAgo: 10, rawExp: 5000, percentage: 50 },
