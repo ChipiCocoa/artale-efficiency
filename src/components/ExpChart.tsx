@@ -14,20 +14,34 @@ interface ChartPoint {
 
 export function ExpChart({ readings }: ExpChartProps) {
   const [data, setData] = useState<ChartPoint[]>([])
-  const processedCountRef = useRef(0)
-  const lastBucketStartRef = useRef(0)
+  const lastBucketTimestampRef = useRef(0)
+  const firstReadingRef = useRef<ExpReading | null>(null)
 
   useEffect(() => {
     if (readings.length < 2) return
 
-    const first = readings[0]
-    let newPoints: ChartPoint[] = []
-    let bucketStart = lastBucketStartRef.current || first.timestamp
-    const bucketMs = 60_000
+    const first = firstReadingRef.current ?? readings[0]
+    if (!firstReadingRef.current) {
+      firstReadingRef.current = readings[0]
+    }
 
-    // Only process readings we haven't seen yet
-    const startIdx = Math.max(1, processedCountRef.current)
-    for (let i = startIdx; i < readings.length; i++) {
+    const bucketMs = 60_000
+    const lastBucket = lastBucketTimestampRef.current || first.timestamp
+    const newPoints: ChartPoint[] = []
+
+    // Find readings after the last bucket we processed
+    for (let i = readings.length - 1; i >= 1; i--) {
+      if (readings[i].timestamp <= lastBucket) break
+      if (readings[i].timestamp - lastBucket >= bucketMs ||
+          (newPoints.length === 0 && readings[i].timestamp - lastBucket >= bucketMs)) {
+        // Walk forward from where we left off
+      }
+    }
+
+    // Simpler: scan forward from readings that are after lastBucket
+    let bucketStart = lastBucket
+    for (let i = 0; i < readings.length; i++) {
+      if (readings[i].timestamp <= bucketStart) continue
       if (readings[i].timestamp - bucketStart >= bucketMs) {
         const elapsed = readings[i].timestamp - first.timestamp
         const expGained = readings[i].rawExp - first.rawExp
@@ -44,9 +58,8 @@ export function ExpChart({ readings }: ExpChartProps) {
 
     if (newPoints.length > 0) {
       setData(prev => [...prev, ...newPoints])
-      lastBucketStartRef.current = bucketStart
+      lastBucketTimestampRef.current = bucketStart
     }
-    processedCountRef.current = readings.length
   }, [readings])
 
   if (data.length < 2) {
