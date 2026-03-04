@@ -14,7 +14,11 @@ function findReadingAt(readings: ExpReading[], targetTimestamp: number): ExpRead
   return readings[lo]
 }
 
-export function computeMetrics(readings: ExpReading[]): ExpMetrics {
+export function computeMetrics(
+  readings: ExpReading[],
+  sessionStartTime?: number,
+  sessionStartExp?: number,
+): ExpMetrics {
   if (readings.length === 0) {
     return {
       currentExp: 0,
@@ -31,8 +35,8 @@ export function computeMetrics(readings: ExpReading[]): ExpMetrics {
 
   const first = readings[0]
   const latest = readings[readings.length - 1]
-  const elapsedMs = latest.timestamp - first.timestamp
-  const sessionExpGained = latest.rawExp - first.rawExp
+  const elapsedMs = latest.timestamp - (sessionStartTime ?? first.timestamp)
+  const sessionExpGained = latest.rawExp - (sessionStartExp ?? first.rawExp)
 
   // Estimated vs actual
   const isExpPer10MinEstimated = elapsedMs < TEN_MINUTES_MS
