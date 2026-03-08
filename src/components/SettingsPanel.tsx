@@ -11,6 +11,12 @@ interface SettingsPanelProps {
 
 const INTERVAL_OPTIONS: SampleInterval[] = [0.5, 1, 2, 3, 5]
 
+function setLangParam(lang: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set('lang', lang)
+  window.history.replaceState(null, '', url.toString())
+}
+
 export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onClose }: SettingsPanelProps) {
   const { t, i18n } = useTranslation()
 
@@ -39,13 +45,13 @@ export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onC
           <div className="interval-options">
             <button
               className={`interval-btn ${i18n.language === 'en' ? 'active' : ''}`}
-              onClick={() => i18n.changeLanguage('en')}
+              onClick={() => { i18n.changeLanguage('en'); setLangParam('en') }}
             >
               English
             </button>
             <button
               className={`interval-btn ${i18n.language.startsWith('zh') ? 'active' : ''}`}
-              onClick={() => i18n.changeLanguage('zh-TW')}
+              onClick={() => { i18n.changeLanguage('zh-TW'); setLangParam('zh-TW') }}
             >
               繁體中文
             </button>

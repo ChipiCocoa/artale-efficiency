@@ -24,10 +24,12 @@ export function useDocumentMeta() {
     }
     metaDesc.setAttribute('content', t('seo.description'))
 
-    // Update URL query param
+    // Only update URL query param if already present (set by explicit user choice)
     const url = new URL(window.location.href)
-    url.searchParams.set('lang', lang)
-    window.history.replaceState(null, '', url.toString())
+    if (url.searchParams.has('lang')) {
+      url.searchParams.set('lang', lang)
+      window.history.replaceState(null, '', url.toString())
+    }
 
     // Update hreflang alternate links
     const languages = ['en', 'zh-TW']
@@ -43,5 +45,16 @@ export function useDocumentMeta() {
       }
       link.href = `${BASE_URL}?lang=${lng}`
     }
+
+    // x-default hreflang — bare URL lets detector choose
+    let xDefault = document.getElementById('hreflang-x-default') as HTMLLinkElement | null
+    if (!xDefault) {
+      xDefault = document.createElement('link')
+      xDefault.id = 'hreflang-x-default'
+      xDefault.rel = 'alternate'
+      xDefault.hreflang = 'x-default'
+      document.head.appendChild(xDefault)
+    }
+    xDefault.href = BASE_URL
   }, [t, i18n.language])
 }
