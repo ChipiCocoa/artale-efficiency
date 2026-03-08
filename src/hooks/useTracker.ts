@@ -14,6 +14,7 @@ export function useTracker(settings: Settings) {
   const [status, setStatus] = useState<TrackingStatus>('idle')
   const [ocrFailures, setOcrFailures] = useState(0)
   const [levelUps, setLevelUps] = useState(0)
+  const levelUpsRef = useRef(0)
   const [debugImages, setDebugImages] = useState<OcrDebugImages | null>(null)
   const [debugEnabled, setDebugEnabled] = useState(false)
   const engineRef = useRef<TrackingEngine | null>(null)
@@ -21,6 +22,7 @@ export function useTracker(settings: Settings) {
   const metricsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sessionStartTimeRef = useRef<number>(0)
   const sessionStartExpRef = useRef<number>(0)
+  const sessionStartPercentageRef = useRef<number>(0)
 
   const startTracking = useCallback(async () => {
     const engine = new TrackingEngine({
@@ -28,6 +30,7 @@ export function useTracker(settings: Settings) {
         if (readingsRef.current.length === 0) {
           sessionStartTimeRef.current = reading.timestamp
           sessionStartExpRef.current = reading.cumulativeExp
+          sessionStartPercentageRef.current = reading.percentage
         }
         readingsRef.current = readingsRef.current.length >= MAX_READINGS
           ? [...readingsRef.current.slice(-MAX_READINGS + 1), reading]
@@ -45,14 +48,17 @@ export function useTracker(settings: Settings) {
           return images
         })
       },
-      onLevelUp: () => setLevelUps(prev => prev + 1),
+      onLevelUp: () => {
+        levelUpsRef.current += 1
+        setLevelUps(levelUpsRef.current)
+      },
     })
     engineRef.current = engine
 
     // Metrics update on a separate timer (not every reading)
     metricsIntervalRef.current = setInterval(() => {
       if (readingsRef.current.length > 0) {
-        setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current))
+        setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
       }
     }, METRICS_UPDATE_INTERVAL)
 
@@ -79,13 +85,15 @@ export function useTracker(settings: Settings) {
     }
     // Final metrics update
     if (readingsRef.current.length > 0) {
-      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current))
+      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
     }
     engineRef.current?.stop()
     engineRef.current = null
     readingsRef.current = []
     sessionStartTimeRef.current = 0
     sessionStartExpRef.current = 0
+    sessionStartPercentageRef.current = 0
+    levelUpsRef.current = 0
     setStatus('idle')
   }, [])
 
