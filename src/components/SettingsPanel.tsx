@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Settings, SampleInterval } from '../types'
 import './SettingsPanel.css'
 
@@ -11,13 +12,15 @@ interface SettingsPanelProps {
 const INTERVAL_OPTIONS: SampleInterval[] = [0.5, 1, 2, 3, 5]
 
 export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onClose }: SettingsPanelProps) {
+  const { t, i18n } = useTranslation()
+
   return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-panel" onClick={e => e.stopPropagation()}>
-        <h3>Settings</h3>
+        <h3>{t('settings.title')}</h3>
 
         <div className="setting-group">
-          <label>Sample Interval</label>
+          <label>{t('settings.sampleInterval')}</label>
           <div className="interval-options">
             {INTERVAL_OPTIONS.map(seconds => (
               <button
@@ -25,35 +28,53 @@ export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onC
                 className={`interval-btn ${settings.sampleInterval === seconds ? 'active' : ''}`}
                 onClick={() => onSettingsChange({ ...settings, sampleInterval: seconds })}
               >
-                {seconds >= 1 ? `${seconds}s` : `${seconds * 1000}ms`}
+                {seconds >= 1 ? t('settings.intervalSeconds', { value: seconds }) : t('settings.intervalMs', { value: seconds * 1000 })}
               </button>
             ))}
           </div>
         </div>
 
         <div className="setting-group">
-          <label>Crop Region</label>
+          <label>{t('settings.language')}</label>
+          <div className="interval-options">
+            <button
+              className={`interval-btn ${i18n.language === 'en' ? 'active' : ''}`}
+              onClick={() => i18n.changeLanguage('en')}
+            >
+              English
+            </button>
+            <button
+              className={`interval-btn ${i18n.language.startsWith('zh') ? 'active' : ''}`}
+              onClick={() => i18n.changeLanguage('zh-TW')}
+            >
+              繁體中文
+            </button>
+          </div>
+        </div>
+
+        <div className="setting-group">
+          <label>{t('settings.cropRegion')}</label>
           <p className="setting-desc">
             {settings.cropRegion
-              ? `${settings.cropRegion.width}x${settings.cropRegion.height} at (${settings.cropRegion.x}, ${settings.cropRegion.y})`
-              : 'Not set — OCR will scan the full screen'}
+              ? t('settings.cropDesc', { width: settings.cropRegion.width, height: settings.cropRegion.height, x: settings.cropRegion.x, y: settings.cropRegion.y })
+              : t('settings.cropNotSet')}
           </p>
           <div className="crop-buttons">
             <button className="btn-secondary" onClick={onSetCropRegion}>
-              {settings.cropRegion ? 'Change Region' : 'Set Region'}
+              {settings.cropRegion ? t('settings.changeRegion') : t('settings.setRegion')}
             </button>
             {settings.cropRegion && (
               <button
                 className="btn-secondary"
                 onClick={() => onSettingsChange({ ...settings, cropRegion: null })}
               >
-                Clear
+                {t('settings.clear')}
               </button>
             )}
           </div>
         </div>
 
-        <button className="btn-primary settings-close" onClick={onClose}>Done</button>
+        <button className="btn-primary settings-close" onClick={onClose}>{t('settings.done')}</button>
       </div>
     </div>
   )
