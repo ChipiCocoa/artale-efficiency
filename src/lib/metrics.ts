@@ -18,6 +18,8 @@ export function computeMetrics(
   readings: ExpReading[],
   sessionStartTime?: number,
   sessionStartExp?: number,
+  sessionStartPercentage?: number,
+  levelUps?: number,
 ): ExpMetrics {
   if (readings.length === 0) {
     return {
@@ -28,6 +30,7 @@ export function computeMetrics(
       timeToLevelMs: null,
       sessionDurationMs: 0,
       sessionExpGained: 0,
+      sessionPercentGained: 0,
       isExpPer10MinEstimated: true,
       isExpPerHourEstimated: true,
     }
@@ -37,6 +40,7 @@ export function computeMetrics(
   const latest = readings[readings.length - 1]
   const elapsedMs = latest.timestamp - (sessionStartTime ?? first.timestamp)
   const sessionExpGained = latest.cumulativeExp - (sessionStartExp ?? first.cumulativeExp)
+  const sessionPercentGained = (levelUps ?? 0) * 100 + latest.percentage - (sessionStartPercentage ?? first.percentage)
 
   // Estimated vs actual
   const isExpPer10MinEstimated = elapsedMs < TEN_MINUTES_MS
@@ -98,6 +102,7 @@ export function computeMetrics(
     timeToLevelMs,
     sessionDurationMs: elapsedMs,
     sessionExpGained,
+    sessionPercentGained,
     isExpPer10MinEstimated,
     isExpPerHourEstimated,
   }

@@ -13,6 +13,7 @@ export interface ExpMetrics {
   timeToLevelMs: number | null  // null if rate is 0
   sessionDurationMs: number
   sessionExpGained: number
+  sessionPercentGained: number
   isExpPer10MinEstimated: boolean
   isExpPerHourEstimated: boolean
 }

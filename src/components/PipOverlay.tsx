@@ -56,7 +56,7 @@ function PipContent({ metrics }: { metrics: ExpMetrics }) {
       </div>
       <div className="pip-row">
         <span className="pip-label">EXP Gained</span>
-        <span className="pip-value">{formatNumber(metrics.sessionExpGained)}</span>
+        <span className="pip-value">{formatNumber(metrics.sessionExpGained)} [+{metrics.sessionPercentGained.toFixed(2)}%]</span>
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ export function usePip() {
     // @ts-expect-error — Document PiP API types not yet in TS lib
     const pip = await window.documentPictureInPicture.requestWindow({
       width: 320,
-      height: 340,
+      height: 240,
     })
 
     // Copy stylesheets to PiP window

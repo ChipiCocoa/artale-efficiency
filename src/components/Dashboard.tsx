@@ -48,7 +48,7 @@ export function Dashboard({ metrics }: DashboardProps) {
         />
         <MetricCard
           label="Session EXP Gained"
-          value={formatNumber(metrics.sessionExpGained)}
+          value={`${formatNumber(metrics.sessionExpGained)} [+${metrics.sessionPercentGained.toFixed(2)}%]`}
         />
       </div>
     </div>
