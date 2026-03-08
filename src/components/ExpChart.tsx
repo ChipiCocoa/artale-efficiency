@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import type { ExpReading } from '../types'
 import './ExpChart.css'
@@ -9,52 +9,47 @@ interface ExpChartProps {
 
 interface ChartPoint {
   time: string
-  expPerHour: number
+  expPer10Min: number
+}
+
+const BUCKET_MS = 60_000
+const WINDOW_MS = 5 * 60_000
+
+// Find the reading closest to (but not after) targetTimestamp within readings[0..maxIdx]
+function findReadingAt(readings: ExpReading[], targetTimestamp: number, maxIdx: number): ExpReading {
+  let lo = 0, hi = maxIdx
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    if (readings[mid].timestamp <= targetTimestamp) lo = mid
+    else hi = mid - 1
+  }
+  return readings[lo]
 }
 
 export function ExpChart({ readings }: ExpChartProps) {
-  const [data, setData] = useState<ChartPoint[]>([])
-  const lastBucketTimestampRef = useRef(0)
-  const firstReadingRef = useRef<ExpReading | null>(null)
+  const data = useMemo(() => {
+    if (readings.length < 2) return []
 
-  useEffect(() => {
-    if (readings.length < 2) return
+    const first = readings[0]
+    const points: ChartPoint[] = []
+    let bucketStart = first.timestamp
 
-    if (!firstReadingRef.current) {
-      firstReadingRef.current = readings[0]
-    }
-    const first = firstReadingRef.current
+    for (let i = 1; i < readings.length; i++) {
+      if (readings[i].timestamp - bucketStart >= BUCKET_MS) {
+        const windowStart = findReadingAt(readings, readings[i].timestamp - WINDOW_MS, i)
+        const elapsed = readings[i].timestamp - windowStart.timestamp
+        const expGained = readings[i].cumulativeExp - windowStart.cumulativeExp
+        const expPer10Min = elapsed > 0 ? Math.round((expGained / elapsed) * 600_000) : 0
 
-    const bucketMs = 60_000
-    let bucketStart = lastBucketTimestampRef.current || first.timestamp
-
-    // Binary search for first reading after bucketStart
-    let lo = 0, hi = readings.length - 1
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1
-      if (readings[mid].timestamp <= bucketStart) lo = mid + 1
-      else hi = mid
-    }
-
-    const newPoints: ChartPoint[] = []
-    for (let i = lo; i < readings.length; i++) {
-      if (readings[i].timestamp - bucketStart >= bucketMs) {
-        const elapsed = readings[i].timestamp - first.timestamp
-        const expGained = readings[i].cumulativeExp - first.cumulativeExp
-        const expPerHour = elapsed > 0 ? Math.round((expGained / elapsed) * 3_600_000) : 0
-
-        newPoints.push({
+        points.push({
           time: new Date(readings[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          expPerHour,
+          expPer10Min,
         })
         bucketStart = readings[i].timestamp
       }
     }
 
-    if (newPoints.length > 0) {
-      setData(prev => [...prev, ...newPoints])
-      lastBucketTimestampRef.current = bucketStart
-    }
+    return points
   }, [readings])
 
   if (data.length < 2) {
@@ -67,7 +62,7 @@ export function ExpChart({ readings }: ExpChartProps) {
 
   return (
     <div className="exp-chart">
-      <h3>EXP/Hour Over Time</h3>
+      <h3>EXP/10min Over Time</h3>
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -76,11 +71,11 @@ export function ExpChart({ readings }: ExpChartProps) {
           <Tooltip
             contentStyle={{ background: '#1a1a2e', border: '1px solid #444', borderRadius: '8px' }}
             labelStyle={{ color: '#888' }}
-            formatter={(value: number | undefined) => [value?.toLocaleString() ?? '0', 'EXP/hr']}
+            formatter={(value: number | undefined) => [value?.toLocaleString() ?? '0', 'EXP/10min']}
           />
           <Line
             type="monotone"
-            dataKey="expPerHour"
+            dataKey="expPer10Min"
             stroke="#4a6cf7"
             strokeWidth={2}
             dot={false}
