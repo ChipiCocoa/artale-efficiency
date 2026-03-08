@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTracker } from './hooks/useTracker'
 import { usePip } from './hooks/usePip'
+import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { Dashboard } from './components/Dashboard'
 import { ExpChart } from './components/ExpChart'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -18,6 +19,7 @@ function App() {
   const { readings, metrics, status, ocrFailures, debugImages, setDebugEnabled, startTracking, stopTracking, getCapture } = useTracker(settings)
   const [showDebug, setShowDebug] = useState(false)
   const pip = usePip()
+  useDocumentMeta()
 
   useEffect(() => {
     saveSettings(settings)
