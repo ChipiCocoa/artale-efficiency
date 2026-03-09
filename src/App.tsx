@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTracker } from './hooks/useTracker'
 import { usePip } from './hooks/usePip'
+import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { Dashboard } from './components/Dashboard'
 import { ExpChart } from './components/ExpChart'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -18,6 +20,8 @@ function App() {
   const { readings, metrics, status, ocrFailures, debugImages, setDebugEnabled, startTracking, stopTracking, getCapture } = useTracker(settings)
   const [showDebug, setShowDebug] = useState(false)
   const pip = usePip()
+  const { t } = useTranslation()
+  useDocumentMeta()
 
   useEffect(() => {
     saveSettings(settings)
@@ -46,31 +50,31 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Artale EXP Tracker</h1>
+        <h1>{t('app.title')}</h1>
         <div className="header-controls">
           <span className={`status-dot status-${status}`} />
-          <span className="status-text">{status}</span>
+          <span className="status-text">{t(`app.status.${status}`)}</span>
           <button
             className={`btn-toggle ${status === 'tracking' ? 'btn-stop' : 'btn-start'}`}
             onClick={handleToggle}
             disabled={status === 'initializing'}
           >
-            {status === 'tracking' ? 'Stop' : 'Start Tracking'}
+            {status === 'tracking' ? t('app.stop') : t('app.startTracking')}
           </button>
           <button className="btn-settings" onClick={() => setShowSettings(true)}>
-            Settings
+            {t('app.settings')}
           </button>
           {pip.isSupported && (
             <button
               className="btn-toggle btn-start"
               onClick={pip.isOpen ? pip.closePip : pip.openPip}
             >
-              {pip.isOpen ? 'Close Overlay' : 'Pop Out'}
+              {pip.isOpen ? t('app.closeOverlay') : t('app.popOut')}
             </button>
           )}
           {ocrFailures >= 3 && (
-            <span className="ocr-warning" title="Multiple OCR failures — check your crop region">
-              OCR issues ({ocrFailures})
+            <span className="ocr-warning" title={t('app.ocrWarning')}>
+              {t('app.ocrIssues', { count: ocrFailures })}
             </span>
           )}
         </div>
@@ -86,7 +90,7 @@ function App() {
             setDebugEnabled(next)
           }}
         >
-          {showDebug ? 'Hide' : 'Show'} OCR Debug
+          {showDebug ? t('app.hide') : t('app.show')} {t('app.ocrDebug')}
         </button>
         {showDebug && debugImages && <DebugPreview images={debugImages} />}
       </main>
@@ -124,9 +128,9 @@ function App() {
       <PipOverlay metrics={metrics} pipWindow={pip.pipWindow} />
 
       <footer className="app-footer">
-        Made by <a href="https://github.com/ChipiCocoa" target="_blank" rel="noopener noreferrer">ChipiCocoa</a>
+        {t('app.madeBy')} <a href="https://github.com/ChipiCocoa" target="_blank" rel="noopener noreferrer">ChipiCocoa</a>
         {' · '}
-        <a href="https://github.com/ChipiCocoa/artale-efficiency" target="_blank" rel="noopener noreferrer">Source Code</a>
+        <a href="https://github.com/ChipiCocoa/artale-efficiency" target="_blank" rel="noopener noreferrer">{t('app.sourceCode')}</a>
       </footer>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import type { CropRegion } from '../types'
 import { ScreenCapture } from '../lib/screen-capture'
 import './CropSelector.css'
@@ -16,6 +17,7 @@ const CANVAS_H = 500
 type Tool = 'pan' | 'select'
 
 export function CropSelector({ capture, currentRegion, onRegionSelected, onClose }: CropSelectorProps) {
+  const { t } = useTranslation()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<OffscreenCanvas | null>(null)
 
@@ -171,9 +173,9 @@ export function CropSelector({ capture, currentRegion, onRegionSelected, onClose
   return (
     <div className="crop-overlay">
       <div className="crop-modal">
-        <h3>Select EXP Number Region</h3>
+        <h3>{t('crop.title')}</h3>
         <p>
-          Scroll to zoom in. Use <strong>Pan</strong> to navigate, then switch to <strong>Select</strong> to draw a rectangle around the EXP numbers.
+          <Trans i18nKey="crop.instructions" components={{ strong: <strong /> }} />
         </p>
         <div className="crop-toolbar">
           <div className="tool-buttons">
@@ -181,22 +183,22 @@ export function CropSelector({ capture, currentRegion, onRegionSelected, onClose
               className={`btn-tool ${tool === 'pan' ? 'active' : ''}`}
               onClick={() => setTool('pan')}
             >
-              Pan
+              {t('crop.pan')}
             </button>
             <button
               className={`btn-tool ${tool === 'select' ? 'active' : ''}`}
               onClick={() => setTool('select')}
             >
-              Select
+              {t('crop.select')}
             </button>
           </div>
-          <span className="zoom-label">Zoom: {zoomPercent}%</span>
+          <span className="zoom-label">{t('crop.zoom', { percent: zoomPercent })}</span>
           <button className="btn-small" onClick={() => {
             const fitZoom = Math.min(CANVAS_W / srcW, CANVAS_H / srcH)
             setZoom(fitZoom)
             setViewX(0)
             setViewY(0)
-          }}>Fit</button>
+          }}>{t('crop.fit')}</button>
         </div>
         <canvas
           ref={canvasRef}
@@ -210,15 +212,15 @@ export function CropSelector({ capture, currentRegion, onRegionSelected, onClose
           className={`crop-canvas ${tool === 'pan' ? 'cursor-grab' : 'cursor-crosshair'}`}
         />
         <div className="crop-actions">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={onClose} className="btn-secondary">{t('crop.cancel')}</button>
           {currentRegion && !selection && (
             <button onClick={() => onRegionSelected(currentRegion)} className="btn-primary">
-              Keep Current
+              {t('crop.keepCurrent')}
             </button>
           )}
           {selection && (
             <button onClick={handleConfirm} className="btn-primary">
-              Confirm Selection ({selection.width}x{selection.height})
+              {t('crop.confirmSelection', { dimensions: `${selection.width}x${selection.height}` })}
             </button>
           )}
         </div>

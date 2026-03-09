@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 import type { ExpMetrics } from '../types'
 import './PipOverlay.css'
@@ -21,41 +22,42 @@ function formatDuration(ms: number | null): string {
 }
 
 function PipContent({ metrics }: { metrics: ExpMetrics }) {
+  const { t } = useTranslation()
   return (
     <div className="pip-container">
       <div className="pip-row pip-highlight">
-        <span className="pip-label">Current EXP</span>
+        <span className="pip-label">{t('pip.currentExp')}</span>
         <span className="pip-value">{formatNumber(metrics.currentExp)} [{metrics.currentPercentage.toFixed(2)}%]</span>
       </div>
       <div className="pip-divider" />
       <div className="pip-row">
-        <span className="pip-label">EXP / 10 min</span>
+        <span className="pip-label">{t('pip.expPerTenMin')}</span>
         <span className="pip-value">
           {formatNumber(metrics.expPer10Min)}
-          {metrics.isExpPer10MinEstimated && <span className="pip-est"> est.</span>}
+          {metrics.isExpPer10MinEstimated && <span className="pip-est"> {t('pip.est')}</span>}
         </span>
       </div>
       <div className="pip-row">
-        <span className="pip-label">EXP / Hour</span>
+        <span className="pip-label">{t('pip.expPerHour')}</span>
         <span className="pip-value">
           {formatNumber(metrics.expPerHour)}
-          {metrics.isExpPerHourEstimated && <span className="pip-est"> est.</span>}
+          {metrics.isExpPerHourEstimated && <span className="pip-est"> {t('pip.est')}</span>}
         </span>
       </div>
       <div className="pip-row">
-        <span className="pip-label">Time to Level</span>
+        <span className="pip-label">{t('pip.timeToLevel')}</span>
         <span className="pip-value">
           {formatDuration(metrics.timeToLevelMs)}
-          {metrics.isExpPerHourEstimated && <span className="pip-est"> est.</span>}
+          {metrics.isExpPerHourEstimated && <span className="pip-est"> {t('pip.est')}</span>}
         </span>
       </div>
       <div className="pip-divider" />
       <div className="pip-row">
-        <span className="pip-label">Session</span>
+        <span className="pip-label">{t('pip.session')}</span>
         <span className="pip-value">{formatDuration(metrics.sessionDurationMs)}</span>
       </div>
       <div className="pip-row">
-        <span className="pip-label">EXP Gained</span>
+        <span className="pip-label">{t('pip.expGained')}</span>
         <span className="pip-value">{formatNumber(metrics.sessionExpGained)} [+{metrics.sessionPercentGained.toFixed(2)}%]</span>
       </div>
     </div>

@@ -1,4 +1,12 @@
 import '@testing-library/jest-dom/vitest'
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+
+i18n.use(initReactI18next).init({
+  lng: 'en',
+  resources: {},
+  interpolation: { escapeValue: false },
+})
 
 // Polyfill ImageData for jsdom (not provided by default)
 if (typeof globalThis.ImageData === 'undefined') {
