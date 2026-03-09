@@ -40,7 +40,7 @@ export function useDocumentMeta() {
     canonical.href = url.searchParams.has('lang') ? `${baseUrl}?lang=${lang}` : baseUrl
 
     // Update hreflang alternate links
-    const languages = ['en', 'zh-TW']
+    const languages = ['en', 'zh-TW', 'zh-CN']
     for (const lng of languages) {
       const id = `hreflang-${lng}`
       let link = document.getElementById(id) as HTMLLinkElement | null

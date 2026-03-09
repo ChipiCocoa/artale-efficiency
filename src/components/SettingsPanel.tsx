@@ -50,10 +50,16 @@ export function SettingsPanel({ settings, onSettingsChange, onSetCropRegion, onC
               English
             </button>
             <button
-              className={`interval-btn ${i18n.language.startsWith('zh') ? 'active' : ''}`}
+              className={`interval-btn ${i18n.language === 'zh-TW' ? 'active' : ''}`}
               onClick={() => { i18n.changeLanguage('zh-TW'); setLangParam('zh-TW') }}
             >
               繁體中文
+            </button>
+            <button
+              className={`interval-btn ${i18n.language === 'zh-CN' ? 'active' : ''}`}
+              onClick={() => { i18n.changeLanguage('zh-CN'); setLangParam('zh-CN') }}
+            >
+              简体中文
             </button>
           </div>
         </div>
