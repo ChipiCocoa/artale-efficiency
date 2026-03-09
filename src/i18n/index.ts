@@ -16,6 +16,7 @@ i18n
     },
     fallbackLng: {
       'zh-Hant': ['zh-TW'],
+      'zh-HK': ['zh-TW'],
       'zh-Hans': ['zh-CN'],
       zh: ['zh-CN'],
       default: ['en'],
