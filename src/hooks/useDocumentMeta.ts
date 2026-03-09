@@ -1,13 +1,12 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-const BASE_URL = 'https://chipicocoa.github.io/artale-efficiency/'
-
 export function useDocumentMeta() {
   const { t, i18n } = useTranslation()
 
   useEffect(() => {
     const lang = i18n.language
+    const baseUrl = `${window.location.origin}${window.location.pathname}`
 
     // Update <html lang>
     document.documentElement.lang = lang
@@ -31,6 +30,15 @@ export function useDocumentMeta() {
       window.history.replaceState(null, '', url.toString())
     }
 
+    // Canonical URL — includes ?lang= only if explicitly set
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
+    if (!canonical) {
+      canonical = document.createElement('link')
+      canonical.rel = 'canonical'
+      document.head.appendChild(canonical)
+    }
+    canonical.href = url.searchParams.has('lang') ? `${baseUrl}?lang=${lang}` : baseUrl
+
     // Update hreflang alternate links
     const languages = ['en', 'zh-TW']
     for (const lng of languages) {
@@ -43,7 +51,7 @@ export function useDocumentMeta() {
         link.hreflang = lng
         document.head.appendChild(link)
       }
-      link.href = `${BASE_URL}?lang=${lng}`
+      link.href = `${baseUrl}?lang=${lng}`
     }
 
     // x-default hreflang — bare URL lets detector choose
@@ -55,6 +63,6 @@ export function useDocumentMeta() {
       xDefault.hreflang = 'x-default'
       document.head.appendChild(xDefault)
     }
-    xDefault.href = BASE_URL
+    xDefault.href = baseUrl
   }, [t, i18n.language])
 }
