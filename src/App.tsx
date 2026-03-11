@@ -17,7 +17,7 @@ function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const [showSettings, setShowSettings] = useState(false)
   const [showCropSelector, setShowCropSelector] = useState(false)
-  const { readings, metrics, status, ocrFailures, debugImages, setDebugEnabled, startTracking, stopTracking, getCapture } = useTracker(settings)
+  const { chartData, metrics, status, ocrFailures, debugImages, setDebugEnabled, startTracking, stopTracking, getCapture } = useTracker(settings)
   const [showDebug, setShowDebug] = useState(false)
   const pip = usePip()
   const { t } = useTranslation()
@@ -81,7 +81,7 @@ function App() {
       </header>
       <main>
         <Dashboard metrics={metrics} />
-        <ExpChart readings={readings} />
+        <ExpChart data={chartData} />
         <button
           className="btn-debug-toggle"
           onClick={() => {
