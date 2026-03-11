@@ -1,58 +1,14 @@
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import type { ExpReading } from '../types'
+import type { ChartPoint } from '../types'
 import './ExpChart.css'
 
 interface ExpChartProps {
-  readings: ExpReading[]
+  data: ChartPoint[]
 }
 
-interface ChartPoint {
-  time: string
-  expPer10Min: number
-}
-
-const BUCKET_MS = 60_000
-const WINDOW_MS = 5 * 60_000
-
-// Find the reading closest to (but not after) targetTimestamp within readings[0..maxIdx]
-function findReadingAt(readings: ExpReading[], targetTimestamp: number, maxIdx: number): ExpReading {
-  let lo = 0, hi = maxIdx
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1
-    if (readings[mid].timestamp <= targetTimestamp) lo = mid
-    else hi = mid - 1
-  }
-  return readings[lo]
-}
-
-export function ExpChart({ readings }: ExpChartProps) {
+export function ExpChart({ data }: ExpChartProps) {
   const { t } = useTranslation()
-  const data = useMemo(() => {
-    if (readings.length < 2) return []
-
-    const first = readings[0]
-    const points: ChartPoint[] = []
-    let bucketStart = first.timestamp
-
-    for (let i = 1; i < readings.length; i++) {
-      if (readings[i].timestamp - bucketStart >= BUCKET_MS) {
-        const windowStart = findReadingAt(readings, readings[i].timestamp - WINDOW_MS, i)
-        const elapsed = readings[i].timestamp - windowStart.timestamp
-        const expGained = readings[i].cumulativeExp - windowStart.cumulativeExp
-        const expPer10Min = elapsed > 0 ? Math.round((expGained / elapsed) * 600_000) : 0
-
-        points.push({
-          time: new Date(readings[i].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          expPer10Min,
-        })
-        bucketStart = readings[i].timestamp
-      }
-    }
-
-    return points
-  }, [readings])
 
   if (data.length < 2) {
     return (
@@ -82,6 +38,7 @@ export function ExpChart({ readings }: ExpChartProps) {
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -31,3 +31,8 @@ export interface Settings {
   sampleInterval: SampleInterval
   cropRegion: CropRegion | null
 }
+
+export interface ChartPoint {
+  time: string
+  expPer10Min: number
+}
