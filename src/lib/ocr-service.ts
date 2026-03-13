@@ -4,6 +4,8 @@ import { parseExpText } from './exp-parser.ts'
 import type { ParsedExp } from './exp-parser.ts'
 import { toGrayscale, threshold, upscale, invert } from './image-preprocessing.ts'
 
+const MIN_CONFIDENCE = 40
+
 export interface OcrDebugImages {
   raw: string       // data URL of cropped raw frame
   processed: string // data URL after preprocessing (what Tesseract sees)
@@ -60,6 +62,12 @@ export class OcrService {
     const { data: { text, confidence } } = await this.worker.recognize(blob)
     const trimmed = text.trim()
     console.log(`[OCR] raw="${trimmed}" confidence=${confidence} size=${final_.width}x${final_.height}`)
+
+    if (confidence < MIN_CONFIDENCE) {
+      console.log(`[OCR] low confidence (${confidence}), skipping`)
+      return null
+    }
+
     const parsed = parseExpText(trimmed)
     if (!parsed) {
       console.log(`[OCR] regex failed to match. Raw text: "${trimmed}"`)
