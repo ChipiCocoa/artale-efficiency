@@ -4,11 +4,20 @@ import { parseExpText } from './exp-parser.ts'
 import type { ParsedExp } from './exp-parser.ts'
 import { toGrayscale, threshold, upscale, invert } from './image-preprocessing.ts'
 
-const MIN_CONFIDENCE = 40
+const MIN_CONFIDENCE = 93
+
+export interface OcrDebugResult {
+  text: string
+  pageConfidence: number
+  digitConfidence: number
+  symbols: Array<{ text: string; confidence: number }>
+  skipped: boolean
+}
 
 export interface OcrDebugImages {
   raw: string       // data URL of cropped raw frame
   processed: string // data URL after preprocessing (what Tesseract sees)
+  ocrResult?: OcrDebugResult
 }
 
 export class OcrService {
@@ -59,11 +68,38 @@ export class OcrService {
     ctx.putImageData(final_, 0, 0)
     const blob = await this.ocrCanvas.convertToBlob({ type: 'image/png' })
 
-    const { data: { text, confidence } } = await this.worker.recognize(blob)
-    const trimmed = text.trim()
-    console.log(`[OCR] raw="${trimmed}" confidence=${confidence} size=${final_.width}x${final_.height}`)
+    const { data } = await this.worker.recognize(blob, {}, { blocks: true })
+    const trimmed = data.text.trim()
 
-    if (confidence < MIN_CONFIDENCE) {
+    // Use digit symbol-level confidence instead of page-level mean.
+    // Page-level averages ALL words — Tesseract splits "]" as a separate
+    // word with confidence=0, dragging the mean to ~5 even when every
+    // digit symbol is recognized at 98-99 confidence.
+    const words = data.blocks?.flatMap(b =>
+      b.paragraphs.flatMap(p =>
+        p.lines.flatMap(l => l.words)
+      )
+    ) ?? []
+    const symbols = words.flatMap(w => w.symbols)
+    const digitSymbols = symbols.filter(s => /^\d$/.test(s.text))
+    const confidence = digitSymbols.length > 0
+      ? Math.min(...digitSymbols.map(s => s.confidence))
+      : data.confidence
+    const skipped = confidence < MIN_CONFIDENCE
+
+    if (this.lastDebugImages) {
+      this.lastDebugImages.ocrResult = {
+        text: trimmed,
+        pageConfidence: data.confidence,
+        digitConfidence: confidence,
+        symbols: symbols.map(s => ({ text: s.text, confidence: s.confidence })),
+        skipped,
+      }
+    }
+
+    console.log(`[OCR] raw="${trimmed}" pageConf=${data.confidence} digitConf=${confidence} size=${final_.width}x${final_.height}`)
+
+    if (skipped) {
       console.log(`[OCR] low confidence (${confidence}), skipping`)
       return null
     }
