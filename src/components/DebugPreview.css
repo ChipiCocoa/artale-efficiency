@@ -35,3 +35,62 @@
   max-width: 100%;
   image-rendering: pixelated;
 }
+
+/* Detail breakdown */
+.debug-details {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.debug-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.debug-detail-label {
+  color: #888;
+  min-width: 70px;
+}
+
+.debug-detail-sep {
+  width: 1px;
+  height: 14px;
+  background: #444;
+  margin: 0 4px;
+}
+
+.debug-token {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.debug-token-text {
+  color: #ddd;
+}
+
+.debug-token-conf {
+  font-size: 0.7rem;
+}
+
+.debug-detail-value {
+  color: #ddd;
+}
+
+.debug-skip-badge {
+  background: #f44336;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
