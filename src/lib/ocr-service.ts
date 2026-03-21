@@ -41,7 +41,7 @@ export class OcrService {
     // Preprocess: upscale 4x → grayscale → high threshold → invert
     const scaled = upscale(imageData, 4)
     const gray = toGrayscale(scaled)
-    const binary = threshold(gray, 200)
+    const binary = threshold(gray, 180)
     const final_ = invert(binary)
 
     // Generate debug images only when debug panel is visible
