@@ -21,6 +21,18 @@ describe('parseExpText', () => {
     expect(parseExpText('39415876[19.43%')).toEqual({ rawExp: 39415876, percentage: 19.43 })
   })
 
+  it('parses integer percentages with .0', () => {
+    expect(parseExpText('5000000[10.0%]')).toEqual({ rawExp: 5000000, percentage: 10 })
+    expect(parseExpText('1000[1.0%]')).toEqual({ rawExp: 1000, percentage: 1 })
+  })
+
+  it('rejects invalid percentage formats', () => {
+    expect(parseExpText('1000[05.43%]')).toBeNull()  // leading zero
+    expect(parseExpText('1000[12.30%]')).toBeNull()   // trailing zero
+    expect(parseExpText('1000[0.00%]')).toBeNull()    // trailing zero
+    expect(parseExpText('1000[15%]')).toBeNull()       // missing decimal
+  })
+
   it('returns null for garbage text', () => {
     expect(parseExpText('hello world')).toBeNull()
     expect(parseExpText('')).toBeNull()
