@@ -3,7 +3,7 @@ export interface ParsedExp {
   percentage: number
 }
 
-const EXP_REGEX = /(\d+)\s*\[\s*(\d{1,2}\.\d{1,2})\s*%\s*\]/
+const EXP_REGEX = /(\d+)\s*\[\s*(\d{1,2}\.\d{1,2})\s*%\s*\]?/
 
 export function parseExpText(text: string): ParsedExp | null {
   const match = text.match(EXP_REGEX)

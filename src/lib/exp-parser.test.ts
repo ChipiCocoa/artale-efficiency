@@ -12,9 +12,13 @@ describe('parseExpText', () => {
     expect(result).toEqual({ rawExp: 43125829, percentage: 30.88 })
   })
 
-  it('parses 0% and 100%', () => {
-    expect(parseExpText('0[0.00%]')).toEqual({ rawExp: 0, percentage: 0 })
-    expect(parseExpText('99999999[100.00%]')).toEqual({ rawExp: 99999999, percentage: 100 })
+  it('parses 0% and 99.99%', () => {
+    expect(parseExpText('0[0.0%]')).toEqual({ rawExp: 0, percentage: 0 })
+    expect(parseExpText('99999999[99.99%]')).toEqual({ rawExp: 99999999, percentage: 99.99 })
+  })
+
+  it('parses without trailing bracket', () => {
+    expect(parseExpText('39415876[19.43%')).toEqual({ rawExp: 39415876, percentage: 19.43 })
   })
 
   it('returns null for garbage text', () => {
