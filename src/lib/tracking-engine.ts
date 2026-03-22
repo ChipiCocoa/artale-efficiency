@@ -113,14 +113,17 @@ export class TrackingEngine {
 
     const adjustedExp = parsed.rawExp + this.expOffset
 
-    if (this.lastCumulativeExp !== null && this.lastCumulativeExp > 0 && adjustedExp > 0 && !isLevelUp) {
-      // Extreme outlier filter: discard immediately
-      const ratio = adjustedExp / this.lastCumulativeExp
-      if (ratio > 2 || ratio < 0.5) {
-        console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastCumulativeExp} (ratio ${ratio.toFixed(2)})`)
-        this.consecutiveFailures++
-        this.callbacks.onOcrFailure(this.consecutiveFailures)
-        return
+    if (!isLevelUp) {
+      // Extreme outlier filter: only when cumulative EXP is large enough for
+      // ratio to be meaningful. Below 100k, single mob kills can cause huge ratios.
+      if (this.lastCumulativeExp !== null && this.lastCumulativeExp > 100_000 && adjustedExp > 0) {
+        const ratio = adjustedExp / this.lastCumulativeExp
+        if (ratio > 2 || ratio < 0.5) {
+          console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastCumulativeExp} (ratio ${ratio.toFixed(2)})`)
+          this.consecutiveFailures++
+          this.callbacks.onOcrFailure(this.consecutiveFailures)
+          return
+        }
       }
 
       // Cross-check: verify EXP and percentage are consistent.
