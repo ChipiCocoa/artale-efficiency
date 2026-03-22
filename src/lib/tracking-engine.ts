@@ -13,6 +13,10 @@ export interface TrackingCallbacks {
   onLevelUp: () => void
 }
 
+// Max allowed discrepancy between expected and actual percentage.
+// Covers rounding from 2-decimal display precision (0.01%) with margin.
+const PCT_TOLERANCE = 0.1
+
 export class TrackingEngine {
   private capture = new ScreenCapture()
   private ocr = new OcrService()
@@ -22,6 +26,7 @@ export class TrackingEngine {
   private consecutiveFailures = 0
   private lastPercentage: number | null = null
   private lastCumulativeExp: number | null = null
+  private lastRawExp: number | null = null
   private expOffset = 0 // cumulative offset added on each level-up
   private cropRegion: CropRegion | null = null
   private callbacks: TrackingCallbacks
@@ -108,10 +113,8 @@ export class TrackingEngine {
 
     const adjustedExp = parsed.rawExp + this.expOffset
 
-    // Outlier filter: if EXP jumps by more than 2x vs previous adjusted reading,
-    // it's almost certainly an OCR misread (e.g. extra digit). Skip it.
-    // Exception: allow through if level-up detected.
-    if (this.lastCumulativeExp !== null && adjustedExp > 0 && !isLevelUp) {
+    if (this.lastCumulativeExp !== null && this.lastCumulativeExp > 0 && adjustedExp > 0 && !isLevelUp) {
+      // Extreme outlier filter: discard immediately
       const ratio = adjustedExp / this.lastCumulativeExp
       if (ratio > 2 || ratio < 0.5) {
         console.log(`[OCR] outlier filtered: ${adjustedExp} vs prev ${this.lastCumulativeExp} (ratio ${ratio.toFixed(2)})`)
@@ -119,10 +122,26 @@ export class TrackingEngine {
         this.callbacks.onOcrFailure(this.consecutiveFailures)
         return
       }
+
+      // Cross-check: verify EXP and percentage are consistent.
+      // Use previous reading to estimate total level EXP, then check if
+      // the current rawExp matches the current percentage within tolerance.
+      if (this.lastRawExp !== null && this.lastPercentage !== null && this.lastPercentage > 0) {
+        const estimatedTotalExp = this.lastRawExp / (this.lastPercentage / 100)
+        const expectedPct = (parsed.rawExp / estimatedTotalExp) * 100
+        const diff = Math.abs(expectedPct - parsed.percentage)
+        if (diff > PCT_TOLERANCE) {
+          console.log(`[OCR] cross-check failed: expected ${expectedPct.toFixed(2)}% but got ${parsed.percentage}% (diff ${diff.toFixed(2)}%)`)
+          this.consecutiveFailures++
+          this.callbacks.onOcrFailure(this.consecutiveFailures)
+          return
+        }
+      }
     }
 
     this.consecutiveFailures = 0
     this.lastCumulativeExp = adjustedExp
+    this.lastRawExp = parsed.rawExp
     this.lastPercentage = parsed.percentage
 
     const reading: ExpReading = {
@@ -153,6 +172,7 @@ export class TrackingEngine {
     this.consecutiveFailures = 0
     this.lastPercentage = null
     this.lastCumulativeExp = null
+    this.lastRawExp = null
     this.expOffset = 0
   }
 }
