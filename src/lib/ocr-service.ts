@@ -4,7 +4,7 @@ import { parseExpText } from './exp-parser.ts'
 import type { ParsedExp } from './exp-parser.ts'
 import { toGrayscale, threshold, upscale, invert } from './image-preprocessing.ts'
 
-const MIN_CONFIDENCE = 93
+const MIN_CONFIDENCE = 90
 
 export interface OcrDebugResult {
   text: string
