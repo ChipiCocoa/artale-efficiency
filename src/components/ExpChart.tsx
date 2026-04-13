@@ -26,10 +26,10 @@ export function ExpChart({ data }: ExpChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis dataKey="time" stroke="#666" fontSize={12} />
           <YAxis stroke="#666" fontSize={12} tickFormatter={(v: number) => v.toLocaleString()} />
-          <Tooltip
+          <Tooltip<number, string>
             contentStyle={{ background: '#1a1a2e', border: '1px solid #444', borderRadius: '8px' }}
             labelStyle={{ color: '#888' }}
-            formatter={(value: number | undefined) => [value?.toLocaleString() ?? '0', t('chart.tooltipLabel')]}
+            formatter={(value) => [value?.toLocaleString() ?? '0', t('chart.tooltipLabel')]}
           />
           <Line
             type="monotone"
