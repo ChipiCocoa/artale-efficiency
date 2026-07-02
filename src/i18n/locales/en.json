@@ -3,6 +3,7 @@
   "app.status.idle": "idle",
   "app.status.tracking": "tracking",
   "app.status.initializing": "initializing",
+  "app.status.error": "error",
   "app.stop": "Stop",
   "app.startTracking": "Start Tracking",
   "app.settings": "Settings",

@@ -3,6 +3,7 @@
   "app.status.idle": "閒置",
   "app.status.tracking": "追蹤中",
   "app.status.initializing": "初始化中",
+  "app.status.error": "錯誤",
   "app.stop": "停止",
   "app.startTracking": "開始追蹤",
   "app.settings": "設定",
