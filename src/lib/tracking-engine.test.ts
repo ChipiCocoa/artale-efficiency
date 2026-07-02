@@ -85,6 +85,59 @@ describe('TrackingEngine sample loop', () => {
     expect(callbacks.onStatusChange).toHaveBeenLastCalledWith('error')
   })
 
+  it('re-baselines as a level-up after consecutive rejections when EXP and percentage both dropped', async () => {
+    // Level-up happened while OCR was blocked: last accepted reading was 40%,
+    // readings resume at ~3% of the next level. The naive level-up condition
+    // (pct < last - 50) is unsatisfiable, and the outlier filter rejects
+    // every reading — tracking must recover instead of freezing forever.
+    const seq = [
+      { rawExp: 400_000, percentage: 40 },  // accepted baseline
+      { rawExp: 30_000, percentage: 3 },    // rejected (ratio < 0.5)
+      { rawExp: 31_000, percentage: 3.1 },  // rejected
+      { rawExp: 32_000, percentage: 3.2 },  // rejected
+      { rawExp: 33_000, percentage: 3.3 },  // must re-baseline as level-up
+    ]
+    let call = 0
+    mockOcr.recognizeExp.mockImplementation(() => Promise.resolve(seq[Math.min(call++, seq.length - 1)]))
+
+    const callbacks = makeCallbacks()
+    const engine = new TrackingEngine(callbacks)
+    await engine.start(1, null)
+    await vi.advanceTimersByTimeAsync(4100)
+
+    expect(callbacks.onLevelUp).toHaveBeenCalledTimes(1)
+    const readings = callbacks.onReading.mock.calls.map(c => c[0] as { cumulativeExp: number })
+    // Cumulative EXP continues across the level: 400k (old level) + 33k (new)
+    expect(readings.at(-1)?.cumulativeExp).toBe(433_000)
+
+    engine.stop()
+  })
+
+  it('re-baselines without a level-up after consecutive rejections when EXP jumped up', async () => {
+    // A legit >2x EXP jump (e.g. big quest turn-in) trips the outlier filter
+    // on every subsequent reading; tracking must resync, not freeze.
+    const seq = [
+      { rawExp: 200_000, percentage: 20 },   // accepted baseline
+      { rawExp: 500_000, percentage: 50 },   // rejected (ratio > 2)
+      { rawExp: 501_000, percentage: 50.1 }, // rejected
+      { rawExp: 502_000, percentage: 50.2 }, // rejected
+      { rawExp: 503_000, percentage: 50.3 }, // must re-baseline, no level-up
+    ]
+    let call = 0
+    mockOcr.recognizeExp.mockImplementation(() => Promise.resolve(seq[Math.min(call++, seq.length - 1)]))
+
+    const callbacks = makeCallbacks()
+    const engine = new TrackingEngine(callbacks)
+    await engine.start(1, null)
+    await vi.advanceTimersByTimeAsync(4100)
+
+    expect(callbacks.onLevelUp).not.toHaveBeenCalled()
+    const readings = callbacks.onReading.mock.calls.map(c => c[0] as { cumulativeExp: number })
+    expect(readings.at(-1)?.cumulativeExp).toBe(503_000)
+
+    engine.stop()
+  })
+
   it('notifies onEnded when the capture stream ends externally', async () => {
     const callbacks = makeCallbacks()
     const engine = new TrackingEngine(callbacks)
