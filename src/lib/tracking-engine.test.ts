@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { TrackingEngine } from './tracking-engine'
-import type { TrackingCallbacks } from './tracking-engine'
 
 const { mockCapture, mockOcr } = vi.hoisted(() => ({
   mockCapture: {
@@ -27,13 +26,14 @@ vi.mock('./ocr-service.ts', () => ({
   OcrService: class { constructor() { return mockOcr } },
 }))
 
-function makeCallbacks(): TrackingCallbacks {
+function makeCallbacks() {
   return {
     onReading: vi.fn(),
     onStatusChange: vi.fn(),
     onOcrFailure: vi.fn(),
     onDebugImages: vi.fn(),
     onLevelUp: vi.fn(),
+    onEnded: vi.fn(),
   }
 }
 
@@ -72,5 +72,18 @@ describe('TrackingEngine sample loop', () => {
     expect(callbacks.onReading).toHaveBeenCalledTimes(1)
 
     engine.stop()
+  })
+
+  it('notifies onEnded when the capture stream ends externally', async () => {
+    const callbacks = makeCallbacks()
+    const engine = new TrackingEngine(callbacks)
+    await engine.start(1, null)
+
+    // Simulate the user clicking the browser's own "Stop sharing" button
+    const trackEnded = mockCapture.onEnded.mock.calls[0][0] as () => void
+    trackEnded()
+
+    expect(callbacks.onEnded).toHaveBeenCalled()
+    expect(callbacks.onStatusChange).toHaveBeenLastCalledWith('idle')
   })
 })

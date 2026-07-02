@@ -41,6 +41,28 @@ export function useTracker(settings: Settings) {
   const chartPointsRef = useRef<ChartPoint[]>([])
   const bucketStartRef = useRef(0)
 
+  // Single teardown path shared by user Stop, engine "capture ended", and
+  // failed starts — clears the metrics interval and all session state.
+  const endSession = useCallback(() => {
+    if (metricsIntervalRef.current) {
+      clearInterval(metricsIntervalRef.current)
+      metricsIntervalRef.current = null
+    }
+    // Final metrics update before clearing
+    if (readingsRef.current.length > 0) {
+      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
+    }
+    engineRef.current?.stop()
+    engineRef.current = null
+    readingsRef.current = []
+    sessionStartTimeRef.current = 0
+    sessionStartExpRef.current = 0
+    sessionStartPercentageRef.current = 0
+    levelUpsRef.current = 0
+    chartPointsRef.current = []
+    bucketStartRef.current = 0
+  }, [])
+
   const startTracking = useCallback(async () => {
     const engine = new TrackingEngine({
       onReading: (reading) => {
@@ -86,6 +108,7 @@ export function useTracker(settings: Settings) {
         levelUpsRef.current += 1
         setLevelUps(levelUpsRef.current)
       },
+      onEnded: endSession,
     })
     engineRef.current = engine
 
@@ -97,7 +120,7 @@ export function useTracker(settings: Settings) {
     }, METRICS_UPDATE_INTERVAL)
 
     await engine.start(settings.sampleInterval, settings.cropRegion)
-  }, [settings.sampleInterval, settings.cropRegion])
+  }, [settings.sampleInterval, settings.cropRegion, endSession])
 
   // Sync crop region changes to running engine
   useEffect(() => {
@@ -113,25 +136,9 @@ export function useTracker(settings: Settings) {
   }, [debugEnabled])
 
   const stopTracking = useCallback(() => {
-    if (metricsIntervalRef.current) {
-      clearInterval(metricsIntervalRef.current)
-      metricsIntervalRef.current = null
-    }
-    // Final metrics update
-    if (readingsRef.current.length > 0) {
-      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
-    }
-    engineRef.current?.stop()
-    engineRef.current = null
-    readingsRef.current = []
-    sessionStartTimeRef.current = 0
-    sessionStartExpRef.current = 0
-    sessionStartPercentageRef.current = 0
-    levelUpsRef.current = 0
-    chartPointsRef.current = []
-    bucketStartRef.current = 0
+    endSession()
     setStatus('idle')
-  }, [])
+  }, [endSession])
 
   const getCapture = useCallback(() => {
     return engineRef.current?.getCapture() ?? null

@@ -11,6 +11,8 @@ export interface TrackingCallbacks {
   onOcrFailure: (consecutiveFailures: number) => void
   onDebugImages: (images: OcrDebugImages) => void
   onLevelUp: () => void
+  /** Fired when the capture stream ends outside our control (browser "Stop sharing"). */
+  onEnded: () => void
 }
 
 // Max allowed discrepancy between expected and actual percentage.
@@ -56,6 +58,7 @@ export class TrackingEngine {
       this.capture.onEnded(() => {
         this.stop()
         this.callbacks.onStatusChange('idle')
+        this.callbacks.onEnded()
       })
 
       this.callbacks.onStatusChange('tracking')
