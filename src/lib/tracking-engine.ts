@@ -71,7 +71,15 @@ export class TrackingEngine {
   private async sampleLoop(): Promise<void> {
     if (!this.running) return
     const start = Date.now()
-    await this.takeSample()
+    try {
+      await this.takeSample()
+    } catch (err) {
+      // A single failed sample (e.g. transient worker error) must not kill
+      // the loop — count it like an OCR misread and keep sampling.
+      console.error('[Tracking] sample failed:', err)
+      this.consecutiveFailures++
+      this.callbacks.onOcrFailure(this.consecutiveFailures)
+    }
     if (!this.running) return
     // Schedule next sample: interval minus time spent, minimum 0
     const elapsed = Date.now() - start
