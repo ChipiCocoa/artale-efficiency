@@ -8,6 +8,7 @@ const { engineState } = vi.hoisted(() => ({
   engineState: {
     callbacks: null as TrackingCallbacks | null,
     instances: [] as Array<{ start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }>,
+    startBehavior: () => Promise.resolve(),
   },
 }))
 
@@ -16,7 +17,7 @@ vi.mock('../lib/tracking-engine.ts', async (importOriginal) => {
   return {
     ...original,
     TrackingEngine: class {
-      start = vi.fn().mockResolvedValue(undefined)
+      start = vi.fn().mockImplementation(() => engineState.startBehavior())
       stop = vi.fn()
       updateCropRegion = vi.fn()
       setDebugEnabled = vi.fn()
@@ -40,6 +41,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   engineState.callbacks = null
   engineState.instances = []
+  engineState.startBehavior = () => Promise.resolve()
 })
 
 afterEach(() => {
@@ -76,5 +78,25 @@ describe('useTracker session lifecycle', () => {
     // Session started at the new reading: duration 0, gained 0 — not 1000s / 300k
     expect(result.current.metrics.sessionDurationMs).toBe(0)
     expect(result.current.metrics.sessionExpGained).toBe(0)
+  })
+
+  it('does not leak an interval or engine when start fails (picker cancelled)', async () => {
+    engineState.startBehavior = () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError'))
+    const { result } = renderHook(() => useTracker(SETTINGS))
+
+    // Must not reject — App calls this without a catch handler
+    await act(async () => {
+      await result.current.startTracking()
+    })
+
+    expect(vi.getTimerCount()).toBe(0) // no metrics interval left behind
+    expect(result.current.getCapture()).toBeNull() // no stale engine
+
+    // Retry after cancelling must work and create exactly one interval
+    engineState.startBehavior = () => Promise.resolve()
+    await act(async () => {
+      await result.current.startTracking()
+    })
+    expect(vi.getTimerCount()).toBe(1)
   })
 })

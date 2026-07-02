@@ -112,14 +112,23 @@ export function useTracker(settings: Settings) {
     })
     engineRef.current = engine
 
+    try {
+      await engine.start(settings.sampleInterval, settings.cropRegion)
+    } catch (err) {
+      // Engine start failed (e.g. screen picker cancelled). The engine already
+      // reported status 'error'; don't leave a stale engine or reject — App
+      // calls startTracking without a catch handler.
+      console.error('[Tracking] failed to start:', err)
+      engineRef.current = null
+      return
+    }
+
     // Metrics update on a separate timer (not every reading)
     metricsIntervalRef.current = setInterval(() => {
       if (readingsRef.current.length > 0) {
         setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
       }
     }, METRICS_UPDATE_INTERVAL)
-
-    await engine.start(settings.sampleInterval, settings.cropRegion)
   }, [settings.sampleInterval, settings.cropRegion, endSession])
 
   // Sync crop region changes to running engine

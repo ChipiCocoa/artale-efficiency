@@ -66,6 +66,9 @@ export class TrackingEngine {
       // Take first reading, then chain next after completion
       this.sampleLoop()
     } catch (err) {
+      // Failed start (e.g. user cancelled the screen picker) must not leak
+      // the already-created OCR worker or leave the engine marked running.
+      this.stop()
       this.callbacks.onStatusChange('error')
       throw err
     }

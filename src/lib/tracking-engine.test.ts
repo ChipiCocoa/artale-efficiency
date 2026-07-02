@@ -74,6 +74,17 @@ describe('TrackingEngine sample loop', () => {
     engine.stop()
   })
 
+  it('cleans up the OCR worker when capture fails to start', async () => {
+    mockCapture.start.mockRejectedValue(new DOMException('Permission denied', 'NotAllowedError'))
+
+    const callbacks = makeCallbacks()
+    const engine = new TrackingEngine(callbacks)
+
+    await expect(engine.start(1, null)).rejects.toThrow()
+    expect(mockOcr.terminate).toHaveBeenCalled()
+    expect(callbacks.onStatusChange).toHaveBeenLastCalledWith('error')
+  })
+
   it('notifies onEnded when the capture stream ends externally', async () => {
     const callbacks = makeCallbacks()
     const engine = new TrackingEngine(callbacks)
