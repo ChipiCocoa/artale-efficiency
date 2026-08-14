@@ -123,6 +123,14 @@ export function useTracker(settings: Settings) {
       return
     }
 
+    // Clear the previous session's visible state only once the new session
+    // actually began — a failed start (e.g. picker cancelled) must leave the
+    // previous results reviewable, same as after Stop.
+    setChartData([])
+    setLevelUps(0)
+    setOcrFailures(0)
+    setMetrics(computeMetrics([]))
+
     // Metrics update on a separate timer (not every reading)
     metricsIntervalRef.current = setInterval(() => {
       if (readingsRef.current.length > 0) {

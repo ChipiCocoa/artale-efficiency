@@ -80,6 +80,64 @@ describe('useTracker session lifecycle', () => {
     expect(result.current.metrics.sessionExpGained).toBe(0)
   })
 
+  it('clears visible chart, level-ups, and OCR warnings when a new session starts', async () => {
+    const { result } = renderHook(() => useTracker(SETTINGS))
+
+    await act(async () => {
+      await result.current.startTracking()
+    })
+    act(() => {
+      // Two readings one bucket apart create a chart point; plus a level-up
+      // and OCR failures that must not survive into the next session
+      engineState.callbacks!.onReading(reading(1_000_000, 500_000, 10))
+      engineState.callbacks!.onReading(reading(1_060_000, 560_000, 16))
+      engineState.callbacks!.onLevelUp()
+      engineState.callbacks!.onOcrFailure(3)
+    })
+    expect(result.current.chartData).toHaveLength(1)
+    expect(result.current.levelUps).toBe(1)
+    expect(result.current.ocrFailures).toBe(3)
+
+    // Session ends externally, then a new one starts
+    act(() => {
+      engineState.callbacks!.onEnded()
+    })
+    await act(async () => {
+      await result.current.startTracking()
+    })
+
+    expect(result.current.chartData).toEqual([])
+    expect(result.current.levelUps).toBe(0)
+    expect(result.current.ocrFailures).toBe(0)
+  })
+
+  it('keeps the previous session results visible when a restart attempt fails', async () => {
+    const { result } = renderHook(() => useTracker(SETTINGS))
+
+    await act(async () => {
+      await result.current.startTracking()
+    })
+    act(() => {
+      engineState.callbacks!.onReading(reading(1_000_000, 500_000, 10))
+      engineState.callbacks!.onReading(reading(1_060_000, 560_000, 16))
+      engineState.callbacks!.onLevelUp()
+      result.current.stopTracking()
+    })
+    expect(result.current.chartData).toHaveLength(1)
+    expect(result.current.levelUps).toBe(1)
+
+    // User clicks Start again but cancels the picker — no session began,
+    // so the previous results must remain visible
+    engineState.startBehavior = () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError'))
+    await act(async () => {
+      await result.current.startTracking()
+    })
+
+    expect(result.current.chartData).toHaveLength(1)
+    expect(result.current.levelUps).toBe(1)
+    expect(result.current.metrics.sessionExpGained).toBe(60_000)
+  })
+
   it('does not leak an interval or engine when start fails (picker cancelled)', async () => {
     engineState.startBehavior = () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError'))
     const { result } = renderHook(() => useTracker(SETTINGS))
