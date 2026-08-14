@@ -41,6 +41,28 @@ export function useTracker(settings: Settings) {
   const chartPointsRef = useRef<ChartPoint[]>([])
   const bucketStartRef = useRef(0)
 
+  // Single teardown path shared by user Stop, engine "capture ended", and
+  // failed starts — clears the metrics interval and all session state.
+  const endSession = useCallback(() => {
+    if (metricsIntervalRef.current) {
+      clearInterval(metricsIntervalRef.current)
+      metricsIntervalRef.current = null
+    }
+    // Final metrics update before clearing
+    if (readingsRef.current.length > 0) {
+      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
+    }
+    engineRef.current?.stop()
+    engineRef.current = null
+    readingsRef.current = []
+    sessionStartTimeRef.current = 0
+    sessionStartExpRef.current = 0
+    sessionStartPercentageRef.current = 0
+    levelUpsRef.current = 0
+    chartPointsRef.current = []
+    bucketStartRef.current = 0
+  }, [])
+
   const startTracking = useCallback(async () => {
     const engine = new TrackingEngine({
       onReading: (reading) => {
@@ -86,8 +108,28 @@ export function useTracker(settings: Settings) {
         levelUpsRef.current += 1
         setLevelUps(levelUpsRef.current)
       },
+      onEnded: endSession,
     })
     engineRef.current = engine
+
+    try {
+      await engine.start(settings.sampleInterval, settings.cropRegion)
+    } catch (err) {
+      // Engine start failed (e.g. screen picker cancelled). The engine already
+      // reported status 'error'; don't leave a stale engine or reject — App
+      // calls startTracking without a catch handler.
+      console.error('[Tracking] failed to start:', err)
+      engineRef.current = null
+      return
+    }
+
+    // Clear the previous session's visible state only once the new session
+    // actually began — a failed start (e.g. picker cancelled) must leave the
+    // previous results reviewable, same as after Stop.
+    setChartData([])
+    setLevelUps(0)
+    setOcrFailures(0)
+    setMetrics(computeMetrics([]))
 
     // Metrics update on a separate timer (not every reading)
     metricsIntervalRef.current = setInterval(() => {
@@ -95,9 +137,7 @@ export function useTracker(settings: Settings) {
         setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
       }
     }, METRICS_UPDATE_INTERVAL)
-
-    await engine.start(settings.sampleInterval, settings.cropRegion)
-  }, [settings.sampleInterval, settings.cropRegion])
+  }, [settings.sampleInterval, settings.cropRegion, endSession])
 
   // Sync crop region changes to running engine
   useEffect(() => {
@@ -113,25 +153,9 @@ export function useTracker(settings: Settings) {
   }, [debugEnabled])
 
   const stopTracking = useCallback(() => {
-    if (metricsIntervalRef.current) {
-      clearInterval(metricsIntervalRef.current)
-      metricsIntervalRef.current = null
-    }
-    // Final metrics update
-    if (readingsRef.current.length > 0) {
-      setMetrics(computeMetrics(readingsRef.current, sessionStartTimeRef.current, sessionStartExpRef.current, sessionStartPercentageRef.current, levelUpsRef.current))
-    }
-    engineRef.current?.stop()
-    engineRef.current = null
-    readingsRef.current = []
-    sessionStartTimeRef.current = 0
-    sessionStartExpRef.current = 0
-    sessionStartPercentageRef.current = 0
-    levelUpsRef.current = 0
-    chartPointsRef.current = []
-    bucketStartRef.current = 0
+    endSession()
     setStatus('idle')
-  }, [])
+  }, [endSession])
 
   const getCapture = useCallback(() => {
     return engineRef.current?.getCapture() ?? null
