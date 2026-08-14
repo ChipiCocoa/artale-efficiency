@@ -107,6 +107,10 @@ export class TrackingEngine {
 
     const parsed = await this.ocr.recognizeExp(frame)
 
+    // stop() may have run while OCR was in flight — a late result must not
+    // reach the callbacks or it would repopulate an already-cleared session.
+    if (!this.running) return
+
     if (this.ocr.lastDebugImages) {
       this.callbacks.onDebugImages(this.ocr.lastDebugImages)
     }

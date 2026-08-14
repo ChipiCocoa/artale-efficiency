@@ -138,6 +138,23 @@ describe('TrackingEngine sample loop', () => {
     engine.stop()
   })
 
+  it('drops a sample still in flight when the engine stops', async () => {
+    let resolveOcr: (v: { rawExp: number; percentage: number }) => void = () => {}
+    mockOcr.recognizeExp.mockImplementation(() => new Promise((r) => { resolveOcr = r }))
+
+    const callbacks = makeCallbacks()
+    const engine = new TrackingEngine(callbacks)
+    await engine.start(1, null)
+    await vi.advanceTimersByTimeAsync(0) // first sample is now awaiting OCR
+
+    engine.stop()
+    resolveOcr({ rawExp: 1000, percentage: 10 })
+    await vi.advanceTimersByTimeAsync(0)
+
+    // The late result must not leak into callbacks after stop
+    expect(callbacks.onReading).not.toHaveBeenCalled()
+  })
+
   it('notifies onEnded when the capture stream ends externally', async () => {
     const callbacks = makeCallbacks()
     const engine = new TrackingEngine(callbacks)
